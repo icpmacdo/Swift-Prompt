@@ -1,0 +1,20 @@
+# Xcode build data
+build/
+DerivedData
+*.xcuserstate
+*.xcworkspace
+xcuserdata
+*.pbxuser
+/.swiftpm/xcode/package.xcworkspace/xcuserdata/
+
+# SwiftPM build artifacts
+.build/
+/Packages/
+
+# macOS system files
+.DS_Store
+
+# Credentials and API keys
+*.env
+Secrets.plist
+secrets.json
