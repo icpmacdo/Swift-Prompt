@@ -32,6 +32,11 @@ class ContentViewModel: ObservableObject {
     // For showing the folder tree
     @Published var folderTree: FolderNode? = nil
     
+    // Static constant for excluded directory names
+    private static let excludedDirectoryNames = ["node_modules", ".git", "dist", "build"]
+    // Static constant for common code file extensions to prioritize for default selection
+    private static let commonCodeFileExtensions: Set<String> = ["swift", "h", "m", "cpp", "c", "js", "ts", "py", "java", "rb", "go", "cs", "kt", "html", "css", "json", "xml", "sql", "sh", "pl", "rs", "php", "dart", "md"]
+    
     private var fileMonitor: FileMonitor?
     private var cancellables = Set<AnyCancellable>()
     
@@ -173,8 +178,7 @@ class ContentViewModel: ObservableObject {
     }
     
     private func shouldExclude(_ url: URL) -> Bool {
-        let excluded = [".git", "node_modules", "dist", "build"]
-        return excluded.contains(url.lastPathComponent)
+        return ContentViewModel.excludedDirectoryNames.contains(url.lastPathComponent)
     }
     
     // MARK: - File Loading and Aggregation
@@ -222,72 +226,65 @@ class ContentViewModel: ObservableObject {
         }
     }
     
-    private func countCodeFiles(in folderURL: URL) async throws -> Int {
+    // MARK: - File Enumeration Helper
+    private func enumerateAccessibleFiles(in folderURL: URL, selectedFileTypes: Set<String>, excludedDirectories: [String]) throws -> [URL] {
         let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey], options: [.skipsHiddenFiles])
-        else {
-            throw NSError(domain: "Could not create enumerator", code: 1)
+        guard let enumerator = fm.enumerator(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey], options: [.skipsHiddenFiles]) else {
+            throw NSError(domain: "FileManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not create file enumerator for \(folderURL.path)"])
         }
         
-        let excludedDirs = ["node_modules", ".git", "dist", "build"]
-        var count = 0
+        var accessibleFiles: [URL] = []
+        
         for case let fileURL as URL in enumerator {
-            let vals = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
-            if let isDir = vals.isDirectory, isDir {
-                if excludedDirs.contains(fileURL.lastPathComponent) {
+            let resourceValues = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
+            
+            if let isDirectory = resourceValues.isDirectory, isDirectory {
+                if excludedDirectories.contains(fileURL.lastPathComponent) {
                     enumerator.skipDescendants()
                 }
-                continue
+                continue // Skip directories from being added to the list
             }
-            if let isFile = vals.isRegularFile, isFile {
-                let ext = fileURL.pathExtension.lowercased()
-                if selectedFileTypes.contains("*") || selectedFileTypes.contains(ext) {
-                    count += 1
+            
+            if let isRegularFile = resourceValues.isRegularFile, isRegularFile {
+                let fileExtension = fileURL.pathExtension.lowercased()
+                if selectedFileTypes.contains("*") || selectedFileTypes.contains(fileExtension) {
+                    accessibleFiles.append(fileURL)
                 }
             }
         }
-        return count
+        return accessibleFiles
+    }
+    
+    private func countCodeFiles(in folderURL: URL) async throws -> Int {
+        let files = try enumerateAccessibleFiles(in: folderURL, selectedFileTypes: selectedFileTypes, excludedDirectories: ContentViewModel.excludedDirectoryNames)
+        return files.count
     }
     
     private func aggregateCodeFiles(in folderURL: URL) async throws -> String {
-        let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey], options: [.skipsHiddenFiles])
-        else {
-            throw NSError(domain: "Could not create enumerator", code: 2)
-        }
+        let filesToProcess = try enumerateAccessibleFiles(in: folderURL, selectedFileTypes: selectedFileTypes, excludedDirectories: ContentViewModel.excludedDirectoryNames)
         
-        let excludedDirs = ["node_modules", ".git", "dist", "build"]
         var combined = ""
-        for case let fileURL as URL in enumerator {
-            let vals = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
-            if vals.isDirectory == true, excludedDirs.contains(fileURL.lastPathComponent) {
-                enumerator.skipDescendants()
-                continue
-            }
-            if vals.isRegularFile == true {
-                let ext = fileURL.pathExtension.lowercased()
-                if selectedFileTypes.contains("*") || selectedFileTypes.contains(ext) {
-                    do {
-                        let data = try Data(contentsOf: fileURL)
-                        let text = String(data: data, encoding: .utf8) ?? ""
-                        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-                        if let first = lines.first, first.trimmingCharacters(in: .whitespaces).hasPrefix("// \(fileURL.lastPathComponent)") {
-                            combined += text
-                        } else {
-                            combined += "// \(fileURL.lastPathComponent)\n\n"
-                            combined += text
-                        }
-                        combined += "\n\n// --- End of \(fileURL.lastPathComponent) ---\n\n"
-                        
-                        await MainActor.run {
-                            self.filesCopied += 1
-                            self.filesProcessed += 1
-                            self.progressMessage = "Processing \(self.filesProcessed) of \(self.totalFiles)..."
-                        }
-                    } catch {
-                        SwiftLog("LOG: [ERROR] reading \(fileURL.lastPathComponent): \(error.localizedDescription)")
-                    }
+        for fileURL in filesToProcess {
+            do {
+                let data = try Data(contentsOf: fileURL)
+                let text = String(data: data, encoding: .utf8) ?? ""
+                let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+                if let first = lines.first, first.trimmingCharacters(in: .whitespaces).hasPrefix("// \(fileURL.lastPathComponent)") {
+                    combined += text
+                } else {
+                    combined += "// \(fileURL.lastPathComponent)\n\n"
+                    combined += text
                 }
+                combined += "\n\n// --- End of \(fileURL.lastPathComponent) ---\n\n"
+                
+                await MainActor.run {
+                    self.filesCopied += 1
+                    self.filesProcessed += 1
+                    self.progressMessage = "Processing \(self.filesProcessed) of \(self.totalFiles)..."
+                }
+            } catch {
+                SwiftLog("LOG: [ERROR] reading \(fileURL.lastPathComponent): \(error.localizedDescription)")
+                // Optionally, decide if one error should stop all processing or just skip the file
             }
         }
         return combined
@@ -354,7 +351,14 @@ extension ContentViewModel {
             self.availableFileTypes = Array(found).sorted()
             SwiftLog("LOG: discovered file types => \(self.availableFileTypes)")
             if self.selectedFileTypes.isEmpty {
-                self.selectedFileTypes = found
+                let preferredSelection = found.intersection(ContentViewModel.commonCodeFileExtensions)
+                if !preferredSelection.isEmpty {
+                    self.selectedFileTypes = preferredSelection
+                    SwiftLog("LOG: auto-selected common file types => \(preferredSelection)")
+                } else {
+                    self.selectedFileTypes = found // Fallback to all found if no common types are present
+                    SwiftLog("LOG: no common file types found, auto-selected all discovered types => \(found)")
+                }
             }
         }
     }

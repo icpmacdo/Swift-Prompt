@@ -33,7 +33,11 @@ class ChatFeatureViewModel: ObservableObject {
     // Toggle for “Use Prompt Framework”
     @Published var usePromptFramework: Bool = false
     
-    // Helper array storing message history for API calls
+    // Helper array storing message history for API calls.
+    // This is intended to be sent with requests to the LLM to provide conversation context.
+    // Each dictionary should conform to the expected format of the target LLM API
+    // (e.g., `["role": "user", "content": "Hello"]`, `["role": "assistant", "content": "Hi there!"]`).
+    // Currently, it's populated but not used by the simulated response logic.
     private var messageHistory: [[String: String]] = []
     
     // MARK: - Chat methods
@@ -45,6 +49,16 @@ class ChatFeatureViewModel: ObservableObject {
         messageHistory.append(["role": "user", "content": text])
     }
     
+    // MARK: - LLM Interaction (Currently Simulated)
+    // TODO: Replace with actual LLM API call.
+    // This method currently simulates an LLM response with a delay.
+    // A real implementation would involve:
+    // 1. Managing API keys securely.
+    // 2. Constructing a request payload, potentially including conversation history (`messageHistory`).
+    // 3. Making an asynchronous network call to an LLM service (e.g., OpenAI, Anthropic).
+    // 4. Parsing the response (which might be JSON, streaming text, etc.).
+    // 5. Handling various network and API errors robustly.
+    // 6. Updating the UI with the actual response or error.
     func requestLLMResponse(for userText: String) {
         isSending = true
         showTypingIndicator = true
