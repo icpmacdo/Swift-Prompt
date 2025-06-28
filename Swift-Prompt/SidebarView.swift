@@ -15,6 +15,7 @@ struct SidebarView: View {
             headerSection
             folderSelectionSection
             fileTypesSelectionSection
+            exportFormatSection
             actionsSection
             folderTreeSection
             Spacer()
@@ -70,6 +71,24 @@ struct SidebarView: View {
                 options: viewModel.availableFileTypes,
                 selectedOptions: $viewModel.selectedFileTypes
             )
+        }
+    }
+    
+    private var exportFormatSection: some View {
+        Section(header: Text("Export Format")
+                    .font(.subheadline)
+                    .fontWeight(.bold)) {
+            Picker("Format", selection: $viewModel.selectedExportFormat) {
+                ForEach(ExportFormat.allCases) { format in
+                    HStack {
+                        Image(systemName: format.icon)
+                        Text(format.displayName)
+                    }
+                    .tag(format)
+                }
+            }
+            .pickerStyle(.segmented)
+            .help("Choose the format for exporting your code")
         }
     }
     

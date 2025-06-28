@@ -1,0 +1,3928 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+Swift-Prompt/
+  Assets.xcassets/
+    AccentColor.colorset/
+      Contents.json
+    AppIcon.appiconset/
+      Contents.json
+    Contents.json
+  Preview Content/
+    Preview Assets.xcassets/
+      Contents.json
+  ChatFeature.swift
+  CodeDetailView.swift
+  ConsoleLogView.swift
+  ContentView.swift
+  ContentViewModel.swift
+  DiffPreviewView.swift
+  FileMonitor.swift
+  FolderNode.swift
+  FolderTreeView.swift
+  LogManager.swift
+  MainView.swift
+  MessageClientView.swift
+  MultiSelectDropdown.swift
+  PreferencesView.swift
+  PromptFormatting.swift
+  SearchReplaceView.swift
+  SidebarPromptFormattingView.swift
+  SidebarView.swift
+  Swift-Prompt.entitlements
+  Swift-PromptApp.swift
+  theme.swift
+Swift-Prompt.xcodeproj/
+  project.pbxproj
+Swift-PromptTests/
+  LLMclipTests.swift
+Swift-PromptUITests/
+  LLMclipUITests.swift
+  LLMclipUITestsLaunchTests.swift
+.gitignore
+CLAUDE.md
+DiffPreviewView.swift
+LICENSE
+MessageClientView.swift
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="Swift-Prompt/Assets.xcassets/AccentColor.colorset/Contents.json">
+{
+  "colors" : [
+    {
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+</file>
+
+<file path="Swift-Prompt/Assets.xcassets/AppIcon.appiconset/Contents.json">
+{
+  "images" : [
+    {
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "tinted"
+        }
+      ],
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "16x16"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "16x16"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "32x32"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "32x32"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "128x128"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "128x128"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "256x256"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "256x256"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "512x512"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "512x512"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+</file>
+
+<file path="Swift-Prompt/Assets.xcassets/Contents.json">
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+</file>
+
+<file path="Swift-Prompt/Preview Content/Preview Assets.xcassets/Contents.json">
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+</file>
+
+<file path="Swift-Prompt/ChatFeature.swift">
+//
+//  ChatFeature.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+import AppKit
+
+// MARK: - ChatMessage Model
+struct ChatMessage: Identifiable {
+    let id = UUID()
+    let content: String
+    let isUser: Bool
+    let timestamp: Date
+}
+
+// MARK: - ChatFeatureViewModel
+/// Example ViewModel holding chat messages, pinned messages, and methods to simulate or request an LLM response.
+class ChatFeatureViewModel: ObservableObject {
+    // Published properties that your View observes:
+    @Published var messages: [ChatMessage] = []
+    @Published var pinnedMessages: [ChatMessage] = []
+    @Published var isSending: Bool = false
+    @Published var showTypingIndicator: Bool = false
+    @Published var showCopyBanner: Bool = false
+    @Published var showPinnedBanner: Bool = false
+    @Published var pinnedBannerText: String = ""
+    
+    @Published var folderURL: URL? = nil
+    
+    // Toggle for “Use Prompt Framework”
+    @Published var usePromptFramework: Bool = false
+    
+    // Helper array storing message history for API calls
+    private var messageHistory: [[String: String]] = []
+    
+    // MARK: - Chat methods
+    func sendUserMessage(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        let msg = ChatMessage(content: text, isUser: true, timestamp: Date())
+        messages.append(msg)
+        messageHistory.append(["role": "user", "content": text])
+    }
+    
+    func requestLLMResponse(for userText: String) {
+        isSending = true
+        showTypingIndicator = true
+        
+        // Example of a simulated async call to an LLM
+        Task {
+            do {
+                // Simulate network delay
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                
+                let response = "Hello from the LLM! (Simulated)"
+                let assistantMsg = ChatMessage(content: response, isUser: false, timestamp: Date())
+                
+                await MainActor.run {
+                    self.messages.append(assistantMsg)
+                    self.isSending = false
+                    self.showTypingIndicator = false
+                }
+                
+            } catch {
+                let errMsg = "Error: \(error.localizedDescription)"
+                let sysMsg = ChatMessage(content: errMsg, isUser: false, timestamp: Date())
+                await MainActor.run {
+                    self.messages.append(sysMsg)
+                    self.isSending = false
+                    self.showTypingIndicator = false
+                }
+            }
+        }
+    }
+    
+    /// For quick demonstration, “simulate” a short JSON code-block response
+    func simulateLLMResponse() {
+        let sample = """
+        [ {
+          "fileName": "FakeFile.swift",
+          "code": "// Updated code\\nimport Foundation\\n..."
+        } ]
+        """
+        let msg = ChatMessage(content: sample, isUser: false, timestamp: Date())
+        messages.append(msg)
+    }
+    
+    func togglePin(for msg: ChatMessage) {
+        if let idx = pinnedMessages.firstIndex(where: { $0.id == msg.id }) {
+            pinnedMessages.remove(at: idx)
+            showPinnedStatus(text: "Unpinned!")
+        } else {
+            pinnedMessages.append(msg)
+            showPinnedStatus(text: "Pinned!")
+        }
+    }
+    
+    private func showPinnedStatus(text: String) {
+        pinnedBannerText = text
+        withAnimation { showPinnedBanner = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            withAnimation { self.showPinnedBanner = false }
+        }
+    }
+    
+    func clearChat() {
+        messages.removeAll()
+        pinnedMessages.removeAll()
+    }
+}
+
+// MARK: - ChatFeatureView
+/// A SwiftUI View that displays messages, pinned messages, and a text field for user input.
+struct ChatFeatureView: View {
+    // IMPORTANT: Explicitly type your EnvironmentObject to ChatFeatureViewModel
+    @EnvironmentObject var viewModel: ChatFeatureViewModel
+    
+    @State private var userInput: String = ""
+    @FocusState private var isTextFieldFocused: Bool
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Top row: toggle + simulate button
+                HStack {
+                    Toggle("Use Prompt Framework", isOn: $viewModel.usePromptFramework)
+                        .padding(.horizontal)
+                    
+                    Spacer()
+                    
+                    Button("Simulate LLM") {
+                        viewModel.simulateLLMResponse()
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.trailing)
+                }
+                .padding(.top, 8)
+                
+                // Show pinned messages in a horizontal scroller
+                if !viewModel.pinnedMessages.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(viewModel.pinnedMessages) { pinned in
+                                Text(pinned.content)
+                                    .font(.footnote)
+                                    .padding(6)
+                                    .background(Color.yellow.opacity(0.2))
+                                    .cornerRadius(8)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.vertical, 6)
+                    .background(Color.yellow.opacity(0.05))
+                }
+                
+                // Scrollable chat history
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 8) {
+                            ForEach(viewModel.messages) { msg in
+                                MessageBubble(
+                                    message: msg,
+                                    isPinned: viewModel.pinnedMessages.contains(where: { $0.id == msg.id }),
+                                    copyAction: { copyToClipboard(msg.content) },
+                                    pinAction: { viewModel.togglePin(for: msg) }
+                                )
+                                .id(msg.id)
+                            }
+                            
+                            if viewModel.showTypingIndicator {
+                                TypingIndicatorBubble()
+                            }
+                        }
+                        .onChange(of: viewModel.messages.count) { _ in
+                            if let lastID = viewModel.messages.last?.id {
+                                withAnimation {
+                                    proxy.scrollTo(lastID, anchor: .bottom)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Input area with a text field & send button
+                inputArea
+            }
+            .navigationTitle("Chat")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        viewModel.clearChat()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .help("Clear all messages")
+                }
+            }
+            .overlay(ephemeralBanners, alignment: .top)
+            .onAppear {
+                isTextFieldFocused = true
+            }
+        }
+    }
+}
+
+// MARK: - Input Area
+extension ChatFeatureView {
+    private var inputArea: some View {
+        HStack {
+            TextField("Type a message...", text: $userInput, axis: .vertical)
+                .focused($isTextFieldFocused)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(1...5)
+                .onSubmit {
+                    sendMessage()
+                }
+            
+            if viewModel.isSending {
+                ProgressView()
+                    .frame(width: 24, height: 24)
+                    .padding(.leading, 8)
+            } else {
+                Button {
+                    sendMessage()
+                } label: {
+                    Image(systemName: "paperplane.fill")
+                        .rotationEffect(.degrees(45))
+                }
+                .disabled(userInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                .padding(.leading, 8)
+            }
+        }
+        .padding()
+    }
+    
+    private func sendMessage() {
+        let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        
+        // 1) Add user message
+        viewModel.sendUserMessage(trimmed)
+        
+        // 2) Make an LLM request
+        viewModel.requestLLMResponse(for: trimmed)
+        
+        // 3) Clear the text field
+        userInput = ""
+        isTextFieldFocused = false
+    }
+}
+
+// MARK: - Ephemeral Banners
+extension ChatFeatureView {
+    @ViewBuilder
+    fileprivate var ephemeralBanners: some View {
+        VStack {
+            if viewModel.showCopyBanner {
+                Text("Copied to clipboard!")
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(8)
+                    .transition(.move(edge: .top))
+            }
+            if viewModel.showPinnedBanner {
+                Text(viewModel.pinnedBannerText)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.orange.opacity(0.9))
+                    .cornerRadius(8)
+                    .transition(.move(edge: .top))
+            }
+            Spacer()
+        }
+        .padding()
+    }
+}
+
+// MARK: - Copy to Clipboard
+extension ChatFeatureView {
+    private func copyToClipboard(_ text: String) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+        
+        // Show ephemeral "Copied" banner
+        Task {
+            await MainActor.run { viewModel.showCopyBanner = true }
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await MainActor.run {
+                withAnimation {
+                    viewModel.showCopyBanner = false
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Helper Bubbles
+struct MessageBubble: View {
+    let message: ChatMessage
+    let isPinned: Bool
+    var copyAction: (() -> Void)?
+    var pinAction: (() -> Void)?
+    
+    var body: some View {
+        HStack {
+            if !message.isUser {
+                avatar(isUser: false)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(message.content)
+                    .padding()
+                    .background(message.isUser ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
+                    .foregroundColor(message.isUser ? .white : .primary)
+                    .cornerRadius(12)
+                    .frame(maxWidth: 250, alignment: message.isUser ? .trailing : .leading)
+                
+                Text(Self.formattedDate(message.timestamp))
+                    .font(.caption2)
+                    .foregroundColor(.gray)
+                    .padding([.leading, .trailing], 8)
+                    .frame(maxWidth: .infinity, alignment: message.isUser ? .trailing : .leading)
+            }
+            if message.isUser {
+                avatar(isUser: true)
+            }
+        }
+        .padding(.horizontal)
+        .contextMenu {
+            Button("Copy") { copyAction?() }
+            Button(isPinned ? "Unpin" : "Pin") { pinAction?() }
+        }
+    }
+    
+    private func avatar(isUser: Bool) -> some View {
+        Image(systemName: isUser ? "person.circle.fill" : "bubble.left")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 30, height: 30)
+            .foregroundColor(isUser ? .blue : .gray)
+            .padding(.horizontal, 4)
+    }
+    
+    private static func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
+    }
+}
+
+struct TypingIndicatorBubble: View {
+    var body: some View {
+        HStack {
+            Image(systemName: "bubble.left")
+                .resizable()
+                .frame(width: 30, height: 30)
+                .foregroundColor(.gray)
+                .padding(.horizontal, 4)
+            VStack(alignment: .leading) {
+                Text("Typing...")
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(12)
+                    .frame(maxWidth: 250, alignment: .leading)
+            }
+            Spacer()
+        }
+        .padding(.horizontal)
+    }
+}
+</file>
+
+<file path="Swift-Prompt/CodeDetailView.swift">
+//
+//  CodeDetailView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct DroppedFile: Identifiable {
+    let id = UUID()
+    let filename: String
+    let content: String
+}
+
+struct CodeDetailView: View {
+    @EnvironmentObject var viewModel: ContentViewModel
+    @EnvironmentObject var promptData: PromptData
+
+    @State private var droppedFiles: [DroppedFile] = []
+    @State private var isDropTargeted: Bool = false
+
+    @State private var showClipboardBanner = false
+    @State private var clipboardBannerText = ""
+
+    var body: some View {
+        GeometryReader { geo in
+            VSplitView {
+                topPane
+                    .frame(height: geo.size.height / 3)
+                bottomPane
+            }
+            .frame(minWidth: 500, minHeight: 600)
+            .overlay(
+                VStack {
+                    if showClipboardBanner {
+                        Text(clipboardBannerText)
+                            .padding()
+                            // changed from Color.green.opacity(0.8) to:
+                            .background(Color.softBeigeSecondary)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                            .transition(.move(edge: .top))
+                    }
+                    Spacer()
+                }
+                .padding(),
+                alignment: .top
+            )
+        }
+        // Tan background across entire detail
+        .background(Color.softBeigeSecondary)
+    }
+    
+    private var topPane: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if viewModel.isProcessing {
+                    progressSection
+                }
+                if viewModel.showSuccessBanner {
+                    successBanner
+                }
+                
+                if !viewModel.textAreaContents.isEmpty {
+                    loadedFileContentsSection
+                } else {
+                    Text("No files loaded yet.")
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.softBeigeSecondary)
+                        )
+                }
+                if !viewModel.commitMessage.isEmpty {
+                    commitMessageSection
+                }
+                Spacer(minLength: 10)
+            }
+            .padding()
+        }
+    }
+    
+    private var bottomPane: some View {
+        HStack(spacing: 0) {
+            leftDropZone
+            Divider()
+            rightQuickCopy
+        }
+    }
+    
+    // MARK: - Subviews
+    private var progressSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProgressView(value: Double(viewModel.filesProcessed),
+                         total: max(Double(viewModel.totalFiles), 1))
+            Text(viewModel.progressMessage)
+            
+            if viewModel.totalFiles > 0 {
+                let percent = Double(viewModel.filesProcessed) / Double(viewModel.totalFiles) * 100
+                Text("\(Int(percent))% completed")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("0% completed (no files).")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    private var successBanner: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green)
+            Text(viewModel.successMessage)
+            Spacer()
+        }
+        .padding()
+        .background(Color.green.opacity(0.2))
+        .cornerRadius(8)
+    }
+    
+    private var loadedFileContentsSection: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Whole codebase quick copy:")
+                    .font(.headline)
+                Spacer()
+                
+                Button("Copy Raw") {
+                    copyToClipboard(viewModel.textAreaContents)
+                    showEphemeralBanner("Raw code copied!")
+                }
+                .buttonStyle(.bordered)
+                
+                Button("Copy With Tasks") {
+                    let final = createXML(from: viewModel.textAreaContents)
+                    copyToClipboard(final)
+                    showEphemeralBanner("XML + tasks copied!")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(.bottom, 5)
+            
+            TextEditor(text: $viewModel.textAreaContents)
+                .font(.body)
+                .padding(5)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.softBeigeSecondary)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.secondary, lineWidth: 1)
+                )
+        }
+    }
+    
+    private var commitMessageSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextEditor(text: $viewModel.commitMessage)
+                .frame(minHeight: 100)
+                .padding(5)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.softBeigeSecondary)
+                )
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary, lineWidth: 1))
+
+            Button("Copy Commit Message") {
+                copyToClipboard(viewModel.commitMessage)
+                showEphemeralBanner("Commit message copied!")
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+    
+    private var leftDropZone: some View {
+        VStack {
+            Text("Drag & Drop File or Folder")
+                .font(.subheadline).fontWeight(.bold)
+                .padding()
+            
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isDropTargeted
+                          ? Color.softBeigeSecondary.opacity(0.6)
+                          : Color.softBeigeSecondary.opacity(0.3))
+                    .padding()
+                
+                VStack(spacing: 8) {
+                    Image(systemName: "tray.and.arrow.down")
+                        .font(.system(size: 50))
+                    Text("Drop a file or folder here")
+                }
+                .foregroundColor(.secondary)
+            }
+            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    private var rightQuickCopy: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Quick Code Copy")
+                    .font(.headline)
+                    .padding()
+                Spacer()
+                Button {
+                    let allText = droppedFiles.map {
+                        "// \($0.filename)\n\($0.content)\n// --- End of \($0.filename) ---\n"
+                    }.joined(separator: "\n")
+                    copyToClipboard(allText)
+                    showEphemeralBanner("All dropped files copied!")
+                } label: {
+                    Label("Copy All", systemImage: "doc.on.doc")
+                }
+                .padding()
+                .disabled(droppedFiles.isEmpty)
+            }
+            
+            if droppedFiles.isEmpty {
+                Text("No file content yet.\nDrop a file/folder to see its content.")
+                    .foregroundColor(.secondary)
+                    .italic()
+                    .padding()
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(droppedFiles) { df in
+                            DisclosureGroup(df.filename) {
+                                VStack(alignment: .leading) {
+                                    Text(df.content)
+                                        .font(.system(.body, design: .monospaced))
+                                        .padding()
+                                        .background(Color.softBeigeSecondary)
+                                        .cornerRadius(8)
+                                    
+                                    Button("Copy \(df.filename)") {
+                                        copyToClipboard(df.content)
+                                        showEphemeralBanner("Copied \(df.filename)!")
+                                    }
+                                    .padding(.horizontal)
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 4)
+                        }
+                    }
+                    .padding()
+                }
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    // MARK: - Functions
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, err in
+                    guard let data = item as? Data,
+                          let url = URL(dataRepresentation: data, relativeTo: nil)
+                    else { return }
+                    
+                    let fm = FileManager.default
+                    var isDir: ObjCBool = false
+                    if fm.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
+                        if let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) {
+                            for case let fileURL as URL in enumerator {
+                                var subIsDir: ObjCBool = false
+                                if fm.fileExists(atPath: fileURL.path, isDirectory: &subIsDir), !subIsDir.boolValue {
+                                    self.readDroppedFile(fileURL)
+                                }
+                            }
+                        }
+                    } else {
+                        self.readDroppedFile(url)
+                    }
+                }
+            }
+        }
+        return true
+    }
+    
+    private func readDroppedFile(_ fileURL: URL) {
+        do {
+            let fileData = try Data(contentsOf: fileURL)
+            if let text = String(data: fileData, encoding: .utf8) {
+                DispatchQueue.main.async {
+                    droppedFiles.append(.init(filename: fileURL.lastPathComponent, content: text))
+                }
+            }
+        } catch {
+            SwiftLog("Error reading dropped file => \(error.localizedDescription)")
+        }
+    }
+    
+    private func createXML(from raw: String) -> String {
+        // same code as before, just your existing method
+        // ...
+        return ""
+    }
+    
+    private func copyToClipboard(_ text: String) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+    }
+    
+    private func showEphemeralBanner(_ msg: String) {
+        clipboardBannerText = msg
+        withAnimation { showClipboardBanner = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { showClipboardBanner = false }
+        }
+    }
+}
+</file>
+
+<file path="Swift-Prompt/ConsoleLogView.swift">
+//
+//  ConsoleLogView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct ConsoleLogView: View {
+    @ObservedObject var logManager = LogManager.shared
+
+    var body: some View {
+        ScrollView {
+            Text(logManager.logs)
+                .font(.system(size: 16, design: .monospaced))
+                .foregroundColor(.black)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        // changed from .background(Color.black.opacity(0.8)) to:
+        .background(Color.softBeigeSecondary)
+    }
+}
+</file>
+
+<file path="Swift-Prompt/ContentView.swift">
+//
+//  ContentView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+import AppKit
+
+extension String {
+    var xmlEscaped: String {
+        self
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
+    }
+    
+    func prependingIndent(_ spaces: Int) -> String {
+        let indent = String(repeating: " ", count: spaces)
+        return self
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { indent + $0 }
+            .joined(separator: "\n")
+    }
+}
+
+struct ContentView: View {
+    @EnvironmentObject var viewModel: ContentViewModel
+    @EnvironmentObject var promptData: PromptData
+
+    @State private var isDropTargeted: Bool = false
+    @State private var droppedFileURLs: [URL] = []
+    @State private var droppedFileContents: String = ""
+
+    @State private var showClipboardBanner: Bool = false
+    @State private var clipboardBannerText: String = ""
+
+    var body: some View {
+        NavigationView {
+            sidebarColumn
+            mainColumn
+        }
+        .navigationViewStyle(.columns)
+        .frame(minWidth: 800, minHeight: 600)
+        .alert(isPresented: $viewModel.showErrorAlert) {
+            Alert(
+                title: Text("Error"),
+                message: Text(viewModel.errorMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+        .overlay(
+            VStack {
+                if showClipboardBanner {
+                    Text(clipboardBannerText)
+                        .padding()
+                        .background(Color.softBeigeSecondary)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        .transition(.move(edge: .top))
+                }
+                Spacer()
+            }
+            .padding(),
+            alignment: .top
+        )
+    }
+
+    private var sidebarColumn: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            headerSection
+            folderSelectionSection
+            fileTypesSection
+            actionsSection
+            folderTreeSection
+            Spacer()
+        }
+        .padding()
+        .frame(minWidth: 300)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button { toggleSidebar() } label: {
+                    Image(systemName: "sidebar.left")
+                }
+            }
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    viewModel.clearAll()
+                    droppedFileURLs.removeAll()
+                    droppedFileContents = ""
+                    promptData.tasks = [""]
+                    promptData.warnings = [""]
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .help("Clear all")
+            }
+        }
+        .background(Color.softBeigeSecondary)
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "doc.on.clipboard")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60, height: 60)
+                .foregroundColor(.accentColor)
+            Text("Swift Prompt")
+                .font(.title2)
+                .fontWeight(.semibold)
+            Text("Aggregate code files from a folder or by dragging them below.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.vertical, 10)
+    }
+
+    private var folderSelectionSection: some View {
+        Section {
+            HStack {
+                TextField("Selected Folder", text: Binding(
+                    get: { viewModel.folderURL?.path ?? "" },
+                    set: { _ in }
+                ))
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .disabled(true)
+                Button("Browse") {
+                    viewModel.selectFolder()
+                }
+                .buttonStyle(.bordered)
+                .disabled(viewModel.isProcessing)
+            }
+        } header: {
+            Text("Selected Folder")
+                .font(.subheadline)
+                .fontWeight(.bold)
+        }
+    }
+
+    private var fileTypesSection: some View {
+        Section {
+            MultiSelectDropdown(
+                title: "Select File Types",
+                options: viewModel.availableFileTypes,
+                selectedOptions: $viewModel.selectedFileTypes
+            )
+        } header: {
+            Text("Select File Types to Include")
+                .font(.subheadline)
+                .fontWeight(.bold)
+        }
+    }
+
+    private var actionsSection: some View {
+        Section {
+            Text("Goals / Warnings / Toggles:")
+                .font(.callout)
+            Toggle("Wrap in XML", isOn: .constant(true))
+            Divider()
+            Button(role: .destructive) {
+                viewModel.clearAll()
+                droppedFileURLs.removeAll()
+                droppedFileContents = ""
+                promptData.tasks = [""]
+                promptData.warnings = [""]
+            } label: {
+                Label("Clear All", systemImage: "trash")
+            }
+            .buttonStyle(.bordered)
+            .foregroundColor(.red)
+        } header: {
+            Text("Task List, Warnings & Actions")
+                .font(.subheadline)
+                .fontWeight(.bold)
+        }
+    }
+
+    private var folderTreeSection: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Folder Tree")
+                .font(.subheadline)
+                .fontWeight(.bold)
+            if let root = viewModel.folderTree {
+                FolderTreeView(rootNode: root)
+                    .frame(minHeight: 200)
+            } else {
+                Text("No folder selected yet.")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var mainColumn: some View {
+        GeometryReader { geo in
+            VSplitView {
+                topPane
+                    .frame(height: viewModel.folderURL == nil ? nil : geo.size.height / 3)
+                bottomPane
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .background(Color.softBeigeSecondary)
+        }
+        .frame(minWidth: 500, maxWidth: .infinity, minHeight: 600)
+    }
+
+    private var topPane: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if viewModel.isProcessing { progressSection }
+                if viewModel.showSuccessBanner { successBanner }
+                
+                if !viewModel.textAreaContents.isEmpty {
+                    loadedFileContentsSection
+                } else {
+                    Text("No files loaded yet.")
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.softBeigeSecondary)
+                        )
+                }
+                
+                if !viewModel.commitMessage.isEmpty {
+                    commitMessageSection
+                }
+                Spacer().frame(height: 10)
+            }
+            .padding()
+        }
+    }
+
+    private var progressSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ProgressView(value: Double(viewModel.filesProcessed),
+                         total: Double(viewModel.totalFiles))
+            Text(viewModel.progressMessage)
+            let percent = Double(viewModel.filesProcessed) / Double(viewModel.totalFiles) * 100
+            Text(String(format: "%.0f%% completed", percent))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var successBanner: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green)
+            Text(viewModel.successMessage)
+            Spacer()
+        }
+        .padding()
+        .background(Color.green.opacity(0.2))
+        .cornerRadius(8)
+    }
+
+    private var loadedFileContentsSection: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Text("Whole codebase quick copy:")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    copyToClipboard(text: viewModel.textAreaContents)
+                    showEphemeralBanner("Raw file contents copied!")
+                } label: {
+                    Label("Copy Raw", systemImage: "doc.on.doc")
+                }
+                .buttonStyle(.bordered)
+
+                Button {
+                    let finalText = createFinalExportText(from: viewModel.textAreaContents)
+                    copyToClipboard(text: finalText)
+                    showEphemeralBanner("File contents + tasks copied!")
+                } label: {
+                    Label("Copy With Tasks", systemImage: "doc.on.doc")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(.bottom, 5)
+            
+            TextEditor(text: $viewModel.textAreaContents)
+                .font(.body)
+                .padding(5)
+                .frame(minHeight: 200)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.softBeigeSecondary)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.secondary, lineWidth: 1)
+                )
+        }
+    }
+
+    private var commitMessageSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextEditor(text: $viewModel.commitMessage)
+                .frame(minHeight: 100)
+                .padding(5)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.softBeigeSecondary)
+                )
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary, lineWidth: 1))
+            Button {
+                copyToClipboard(text: viewModel.commitMessage)
+                showEphemeralBanner("Commit message copied!")
+            } label: {
+                Label("Copy Commit Message", systemImage: "doc.on.doc")
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    private var bottomPane: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Drag & Drop Files into the Text Area Below")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .padding(.top)
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isDropTargeted
+                          ? Color.softBeigeSecondary.opacity(0.6)
+                          : Color.softBeigeSecondary.opacity(0.3))
+                    .padding()
+                
+                VStack(spacing: 8) {
+                    Image(systemName: "tray.and.arrow.down")
+                        .font(.system(size: 50))
+                        .foregroundColor(.secondary)
+                    Text("Drag files here")
+                        .foregroundColor(.secondary)
+                    
+                    if !droppedFileURLs.isEmpty {
+                        Divider().padding(.vertical, 8)
+                        ForEach(droppedFileURLs, id: \.self) { url in
+                            Text(url.lastPathComponent)
+                                .font(.footnote)
+                        }
+                    }
+                }
+            }
+            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+                handleFileDrop(providers: providers)
+            }
+            .frame(minHeight: 150)
+
+            Divider().padding(.vertical, 8)
+
+            VStack(alignment: .leading) {
+                HStack {
+                    Text("Dropped File Contents:")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        let finalText = createFinalExportText(from: droppedFileContents)
+                        copyToClipboard(text: finalText)
+                        showEphemeralBanner("Dropped file contents copied as XML!")
+                    } label: {
+                        Label("Copy With Tasks", systemImage: "doc.on.doc")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                
+                TextEditor(text: $droppedFileContents)
+                    .font(.body)
+                    .padding(5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.softBeigeSecondary)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.secondary, lineWidth: 1)
+                    )
+                    .frame(minHeight: 200)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 10)
+        }
+    }
+
+    // MARK: - File Drop Handler
+    private func handleFileDrop(providers: [NSItemProvider]) -> Bool {
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
+                    if let data = item as? Data,
+                       let droppedURL = URL(dataRepresentation: data, relativeTo: nil) {
+                        do {
+                            let fileData = try Data(contentsOf: droppedURL)
+                            if let fileText = String(data: fileData, encoding: .utf8) {
+                                DispatchQueue.main.async {
+                                    self.droppedFileURLs.append(droppedURL)
+                                    self.droppedFileContents += "\n// \(droppedURL.lastPathComponent)\n\n" + fileText + "\n// --- End of \(droppedURL.lastPathComponent) ---\n\n"
+                                }
+                            }
+                        } catch {
+                            SwiftLog("Error reading dropped file: \(error.localizedDescription)")
+                        }
+                    }
+                }
+            }
+        }
+        return true
+    }
+
+    private func createFinalExportText(from raw: String) -> String {
+        // Your XML conversion code here.
+        return raw
+    }
+
+    private func copyToClipboard(text: String) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+    }
+
+    private func showEphemeralBanner(_ msg: String) {
+        clipboardBannerText = msg
+        withAnimation { showClipboardBanner = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { showClipboardBanner = false }
+        }
+    }
+
+    private func toggleSidebar() {
+        NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .environmentObject(ContentViewModel())
+            .environmentObject(PromptData())
+    }
+}
+</file>
+
+<file path="Swift-Prompt/ContentViewModel.swift">
+//
+//  ContentViewModel.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+import Combine
+import AppKit
+
+class ContentViewModel: ObservableObject {
+    // MARK: - Published Properties
+    @Published var isProcessing = false
+    @Published var progressMessage = ""
+    @Published var textAreaContents = ""
+    @Published var folderURL: URL? = nil
+    @Published var successMessage = ""
+    @Published var showSuccessBanner = false
+    @Published var errorMessage = ""
+    @Published var showErrorAlert = false
+    @Published var commitMessage: String = ""
+    
+    // For controlling which file types to load
+    @Published var availableFileTypes: [String] = []
+    @Published var selectedFileTypes: Set<String> = []  // persisted between sessions
+    
+    @Published private(set) var filesCopied = 0
+    @Published private(set) var totalFiles = 0
+    @Published private(set) var filesProcessed = 0
+    
+    // For showing the folder tree
+    @Published var folderTree: FolderNode? = nil
+    
+    private var fileMonitor: FileMonitor?
+    private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Initialization
+    init() {
+        // Load previously saved selected file types from UserDefaults.
+        if let savedFileTypes = UserDefaults.standard.array(forKey: "SelectedFileTypes") as? [String] {
+            selectedFileTypes = Set(savedFileTypes)
+        }
+        
+        // Persist any changes to selectedFileTypes automatically.
+        $selectedFileTypes
+            .sink { newSelection in
+                UserDefaults.standard.set(Array(newSelection), forKey: "SelectedFileTypes")
+            }
+            .store(in: &cancellables)
+        
+        // Watch for changes to folderURL to trigger file loading and monitoring.
+        $folderURL
+            .sink { [weak self] newURL in
+                guard let self = self else { return }
+                if let folderURL = newURL {
+                    SwiftLog("LOG: folderURL changed => \(folderURL.path)")
+                    self.startMonitoringFolder(folderURL)
+                    Task {
+                        await self.updateAvailableFileTypes(for: folderURL)
+                        await MainActor.run {
+                            // If no selection has been made yet, default to all discovered file types.
+                            if self.selectedFileTypes.isEmpty {
+                                self.selectedFileTypes = Set(self.availableFileTypes)
+                            }
+                        }
+                        self.loadFiles(from: folderURL)
+                        self.buildFolderTree(from: folderURL)
+                    }
+                } else {
+                    SwiftLog("LOG: folderURL cleared => stop monitoring.")
+                    self.fileMonitor?.stopMonitoring()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    // MARK: - Folder Selection with Security Scoping
+    func selectFolder() {
+        let dialog = NSOpenPanel()
+        dialog.title = "Choose a Folder"
+        dialog.canChooseFiles = false
+        dialog.canChooseDirectories = true
+        dialog.allowsMultipleSelection = false
+        dialog.showsHiddenFiles = false
+        dialog.prompt = "Select Folder for Reading and Writing"
+        
+        if dialog.runModal() == .OK, let url = dialog.url {
+            let startedAccessing = url.startAccessingSecurityScopedResource()
+            if startedAccessing {
+                SwiftLog("LOG: Started accessing security-scoped resource at \(url.path)")
+            }
+            
+            if !FileManager.default.isWritableFile(atPath: url.path) {
+                SwiftLog("LOG: [WARN] Selected folder is not writable: \(url.path)")
+                DispatchQueue.main.async {
+                    self.errorMessage = "The selected folder doesn't have write permissions. You may have read-only access, or need to grant additional permissions."
+                    self.showErrorAlert = true
+                }
+            }
+            
+            // Create a security-scoped bookmark.
+            do {
+                let bookmarkData = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                UserDefaults.standard.set(bookmarkData, forKey: "LastAccessedFolderBookmark")
+                SwiftLog("LOG: Created security-scoped bookmark for folder")
+            } catch {
+                SwiftLog("LOG: [ERROR] Failed to create bookmark: \(error)")
+            }
+            
+            self.folderURL = url
+        } else {
+            SwiftLog("LOG: user canceled folder selection.")
+        }
+    }
+    
+    func restorePreviousFolder() {
+        guard let bookmarkData = UserDefaults.standard.data(forKey: "LastAccessedFolderBookmark") else {
+            return
+        }
+        
+        do {
+            var isStale = false
+            let resolvedURL = try URL(resolvingBookmarkData: bookmarkData, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale)
+            
+            if isStale {
+                SwiftLog("LOG: Bookmark is stale, will need to select folder again")
+                return
+            }
+            
+            if resolvedURL.startAccessingSecurityScopedResource() {
+                SwiftLog("LOG: Restored access to previous folder: \(resolvedURL.path)")
+                self.folderURL = resolvedURL
+            }
+        } catch {
+            SwiftLog("LOG: [ERROR] Failed to resolve bookmark: \(error)")
+        }
+    }
+    
+    // MARK: - Building Folder Tree
+    func buildFolderTree(from url: URL) {
+        Task {
+            let rootNode = await createFolderNode(for: url)
+            await MainActor.run {
+                self.folderTree = rootNode
+            }
+        }
+    }
+    
+    private func createFolderNode(for url: URL) async -> FolderNode {
+        var isDir: ObjCBool = false
+        FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
+        let nodeName = url.lastPathComponent
+        var node = FolderNode(name: nodeName, url: url, isDirectory: isDir.boolValue)
+        
+        if isDir.boolValue {
+            do {
+                let childURLs = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+                var children: [FolderNode] = []
+                for cURL in childURLs {
+                    if shouldExclude(cURL) { continue }
+                    let childNode = await createFolderNode(for: cURL)
+                    children.append(childNode)
+                }
+                // Directories first, files second.
+                children.sort { ($0.isDirectory ? 0 : 1) < ($1.isDirectory ? 0 : 1) }
+                node.children = children
+            } catch {
+                SwiftLog("LOG: [ERROR] Could not read directory => \(error.localizedDescription)")
+            }
+        }
+        return node
+    }
+    
+    private func shouldExclude(_ url: URL) -> Bool {
+        let excluded = [".git", "node_modules", "dist", "build"]
+        return excluded.contains(url.lastPathComponent)
+    }
+    
+    // MARK: - File Loading and Aggregation
+    func loadFiles(from folder: URL) {
+        Task {
+            await MainActor.run {
+                self.isProcessing = true
+                self.progressMessage = "Preparing..."
+                self.filesCopied = 0
+                self.filesProcessed = 0
+                self.totalFiles = 0
+                self.textAreaContents = ""
+            }
+            
+            do {
+                let count = try await countCodeFiles(in: folder)
+                await MainActor.run {
+                    self.totalFiles = count
+                    if count == 0 {
+                        self.errorMessage = "No readable code files found in that folder."
+                        self.showErrorAlert = true
+                        self.isProcessing = false
+                        return
+                    }
+                }
+                
+                let combined = try await aggregateCodeFiles(in: folder)
+                await MainActor.run {
+                    self.textAreaContents = combined
+                    self.successMessage = "Successfully loaded \(self.filesCopied) file(s)."
+                    self.showSuccessBanner = true
+                    self.isProcessing = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        withAnimation { self.showSuccessBanner = false }
+                    }
+                }
+            } catch {
+                SwiftLog("LOG: [ERROR] loadFiles => \(error.localizedDescription)")
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.errorMessage = error.localizedDescription
+                    self.showErrorAlert = true
+                }
+            }
+        }
+    }
+    
+    private func countCodeFiles(in folderURL: URL) async throws -> Int {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey], options: [.skipsHiddenFiles])
+        else {
+            throw NSError(domain: "Could not create enumerator", code: 1)
+        }
+        
+        let excludedDirs = ["node_modules", ".git", "dist", "build"]
+        var count = 0
+        for case let fileURL as URL in enumerator {
+            let vals = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
+            if let isDir = vals.isDirectory, isDir {
+                if excludedDirs.contains(fileURL.lastPathComponent) {
+                    enumerator.skipDescendants()
+                }
+                continue
+            }
+            if let isFile = vals.isRegularFile, isFile {
+                let ext = fileURL.pathExtension.lowercased()
+                if selectedFileTypes.contains("*") || selectedFileTypes.contains(ext) {
+                    count += 1
+                }
+            }
+        }
+        return count
+    }
+    
+    private func aggregateCodeFiles(in folderURL: URL) async throws -> String {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey], options: [.skipsHiddenFiles])
+        else {
+            throw NSError(domain: "Could not create enumerator", code: 2)
+        }
+        
+        let excludedDirs = ["node_modules", ".git", "dist", "build"]
+        var combined = ""
+        for case let fileURL as URL in enumerator {
+            let vals = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
+            if vals.isDirectory == true, excludedDirs.contains(fileURL.lastPathComponent) {
+                enumerator.skipDescendants()
+                continue
+            }
+            if vals.isRegularFile == true {
+                let ext = fileURL.pathExtension.lowercased()
+                if selectedFileTypes.contains("*") || selectedFileTypes.contains(ext) {
+                    do {
+                        let data = try Data(contentsOf: fileURL)
+                        let text = String(data: data, encoding: .utf8) ?? ""
+                        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+                        if let first = lines.first, first.trimmingCharacters(in: .whitespaces).hasPrefix("// \(fileURL.lastPathComponent)") {
+                            combined += text
+                        } else {
+                            combined += "// \(fileURL.lastPathComponent)\n\n"
+                            combined += text
+                        }
+                        combined += "\n\n// --- End of \(fileURL.lastPathComponent) ---\n\n"
+                        
+                        await MainActor.run {
+                            self.filesCopied += 1
+                            self.filesProcessed += 1
+                            self.progressMessage = "Processing \(self.filesProcessed) of \(self.totalFiles)..."
+                        }
+                    } catch {
+                        SwiftLog("LOG: [ERROR] reading \(fileURL.lastPathComponent): \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+        return combined
+    }
+    
+    // MARK: - Folder Monitoring
+    private func startMonitoringFolder(_ folderURL: URL) {
+        fileMonitor?.stopMonitoring()
+        fileMonitor = FileMonitor(url: folderURL) { [weak self] changed in
+            guard let self = self else { return }
+            SwiftLog("FileMonitor => changed: \(changed)")
+            self.loadFiles(from: folderURL)
+        }
+        fileMonitor?.startMonitoring()
+    }
+    
+    // MARK: - Clear All Data
+    func clearAll() {
+        SwiftLog("LOG: clearAll => resetting.")
+        Task {
+            await MainActor.run {
+                self.isProcessing = false
+                self.progressMessage = ""
+                self.textAreaContents = ""
+                self.folderURL = nil
+                self.successMessage = ""
+                self.showSuccessBanner = false
+                self.errorMessage = ""
+                self.showErrorAlert = false
+                self.filesCopied = 0
+                self.totalFiles = 0
+                self.filesProcessed = 0
+                self.folderTree = nil
+                self.selectedFileTypes = Set(self.availableFileTypes)
+            }
+        }
+    }
+    
+}
+
+// MARK: - Update Available File Types Extension
+extension ContentViewModel {
+    func updateAvailableFileTypes(for folderURL: URL) async {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: folderURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else {
+            return
+        }
+        let standardExtensions: Set<String> = [
+            "swift", "h", "m", "cpp", "c", "js", "ts", "py", "java",
+            "rb", "go", "cs", "kt", "html", "css", "json", "xml",
+            "sql", "sh", "bat", "pl", "rs", "php", "dart"
+        ]
+        var found: Set<String> = []
+        for case let fileURL as URL in enumerator {
+            if let vals = try? fileURL.resourceValues(forKeys: [.isDirectoryKey]),
+               vals.isDirectory == false {
+                let ext = fileURL.pathExtension.lowercased()
+                if !ext.isEmpty, standardExtensions.contains(ext) {
+                    found.insert(ext)
+                }
+            }
+        }
+        await MainActor.run {
+            self.availableFileTypes = Array(found).sorted()
+            SwiftLog("LOG: discovered file types => \(self.availableFileTypes)")
+            if self.selectedFileTypes.isEmpty {
+                self.selectedFileTypes = found
+            }
+        }
+    }
+}
+</file>
+
+<file path="Swift-Prompt/DiffPreviewView.swift">
+//
+//  DiffPreviewView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct DiffPreviewView: View {
+    let fileUpdates: [LLMFileUpdate]
+    let folderURL: URL?
+    var onApply: () -> Void
+    var onCancel: () -> Void
+
+    var body: some View {
+        VStack {
+            Text("Preview Changes")
+                .font(.title)
+                .padding(.top)
+            
+            if fileUpdates.isEmpty {
+                Text("No file updates to preview.")
+                    .foregroundColor(.secondary)
+                    .padding()
+            } else {
+                List {
+                    ForEach(fileUpdates, id: \.fileName) { update in
+                        DisclosureGroup(update.fileName) {
+                            diffView(for: update)
+                        }
+                    }
+                }
+                .listStyle(.inset)
+            }
+            
+            Divider()
+            
+            HStack {
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                
+                Spacer()
+                
+                Button("Apply", action: onApply)
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding()
+        }
+        .frame(minWidth: 700, minHeight: 500)
+        // Add a base tan background
+        .background(Color.softBeigeSecondary)
+    }
+}
+
+extension DiffPreviewView {
+    private func diffView(for update: LLMFileUpdate) -> some View {
+        let diffLines = getDiffLines(for: update)
+        return sideBySideDiffView(diffLines: diffLines)
+            .frame(maxHeight: 300)
+    }
+
+    private func getDiffLines(for update: LLMFileUpdate) -> [DiffLine] {
+        SwiftLog("LOG: reading old contents for: \(update.fileName)")
+        let oldText = readOldFileContents(for: update.fileName)
+        let newText = update.code
+        return computeLineDiff(oldText: oldText, newText: newText)
+    }
+
+    private func readOldFileContents(for fileName: String) -> String {
+        guard let folderURL = folderURL else {
+            SwiftLog("LOG: no folderURL; returning empty.")
+            return ""
+        }
+        let fileURL = folderURL.appendingPathComponent(fileName)
+        do {
+            let contents = try String(contentsOf: fileURL)
+            return contents
+        } catch {
+            SwiftLog("LOG: couldn't read \(fileName): \(error)")
+            return ""
+        }
+    }
+
+    private func computeLineDiff(oldText: String, newText: String) -> [DiffLine] {
+        let oldLines = oldText.components(separatedBy: .newlines)
+        let newLines = newText.components(separatedBy: .newlines)
+        
+        var result: [DiffLine] = []
+        var i = 0
+        var j = 0
+        
+        while i < oldLines.count || j < newLines.count {
+            if i < oldLines.count, j < newLines.count {
+                if oldLines[i] == newLines[j] {
+                    result.append(DiffLine(
+                        oldLine: oldLines[i],
+                        newLine: newLines[j],
+                        oldLineNumber: i + 1,
+                        newLineNumber: j + 1,
+                        changeType: .unchanged
+                    ))
+                    i += 1
+                    j += 1
+                } else {
+                    result.append(DiffLine(
+                        oldLine: oldLines[i],
+                        newLine: nil,
+                        oldLineNumber: i + 1,
+                        newLineNumber: nil,
+                        changeType: .removed
+                    ))
+                    i += 1
+                    
+                    result.append(DiffLine(
+                        oldLine: nil,
+                        newLine: newLines[j],
+                        oldLineNumber: nil,
+                        newLineNumber: j + 1,
+                        changeType: .added
+                    ))
+                    j += 1
+                }
+            } else if i < oldLines.count {
+                result.append(DiffLine(
+                    oldLine: oldLines[i],
+                    newLine: nil,
+                    oldLineNumber: i + 1,
+                    newLineNumber: nil,
+                    changeType: .removed
+                ))
+                i += 1
+            } else if j < newLines.count {
+                result.append(DiffLine(
+                    oldLine: nil,
+                    newLine: newLines[j],
+                    oldLineNumber: nil,
+                    newLineNumber: j + 1,
+                    changeType: .added
+                ))
+                j += 1
+            }
+        }
+        return result
+    }
+
+    @ViewBuilder
+    private func sideBySideDiffView(diffLines: [DiffLine]) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                VStack {
+                    Text("Current")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Text("")
+                        .frame(width: 35)
+                }
+                .frame(width: 200, alignment: .leading)
+                
+                Divider().frame(width: 1)
+                
+                VStack {
+                    Text("Incoming")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Text("")
+                        .frame(width: 35)
+                }
+                .frame(width: 200, alignment: .leading)
+            }
+            .padding(4)
+            // changed from Color(NSColor.windowBackgroundColor) to a tan
+            .background(Color.softBeigeSecondary)
+            .overlay(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
+            )
+            
+            ScrollView(.vertical) {
+                VStack(spacing: 0) {
+                    ForEach(diffLines) { line in
+                        HStack(alignment: .top, spacing: 0) {
+                            HStack(spacing: 4) {
+                                lineNumberView(line.oldLineNumber)
+                                    .frame(width: 35, alignment: .trailing)
+                                Text(line.oldLine ?? "")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 4)
+                                    .background(backgroundColor(change: line.changeType, isNew: false))
+                            }
+                            
+                            Divider().frame(width: 1)
+                            
+                            HStack(spacing: 4) {
+                                lineNumberView(line.newLineNumber)
+                                    .frame(width: 35, alignment: .trailing)
+                                Text(line.newLine ?? "")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 4)
+                                    .background(backgroundColor(change: line.changeType, isNew: true))
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+                .font(.system(.body, design: .monospaced))
+                .padding(.vertical, 4)
+            }
+        }
+    }
+    
+    private func lineNumberView(_ number: Int?) -> some View {
+        Text(number.map(String.init) ?? "")
+            .font(.caption2)
+    }
+    
+    private func backgroundColor(change: DiffLine.ChangeType, isNew: Bool) -> Color {
+        switch change {
+        case .unchanged:
+            return .clear
+        case .added:
+            return isNew ? Color.green.opacity(0.2) : .clear
+        case .removed:
+            return !isNew ? Color.red.opacity(0.2) : .clear
+        }
+    }
+}
+
+// MARK: - DiffLine
+struct DiffLine: Identifiable {
+    enum ChangeType {
+        case unchanged
+        case added
+        case removed
+    }
+    
+    let id = UUID()
+    let oldLine: String?
+    let newLine: String?
+    let oldLineNumber: Int?
+    let newLineNumber: Int?
+    let changeType: ChangeType
+}
+</file>
+
+<file path="Swift-Prompt/FileMonitor.swift">
+import Foundation
+
+class FileMonitor {
+    private let url: URL
+    private let callback: ([URL]) -> Void
+    private var source: DispatchSourceFileSystemObject?
+    private let fileDescriptor: CInt
+
+    init(url: URL, callback: @escaping ([URL]) -> Void) {
+        self.url = url
+        self.callback = callback
+        self.fileDescriptor = open(url.path, O_EVTONLY)
+        self.source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: self.fileDescriptor,
+            eventMask: .write,
+            queue: .global()
+        )
+        self.source?.setEventHandler { [weak self] in
+            guard let self = self else { return }
+            let changed = self.getChangedFiles()
+            if !changed.isEmpty {
+                SwiftLog("FileMonitor => changes: \(changed)")
+            }
+            self.callback(changed)
+        }
+        self.source?.setCancelHandler {
+            close(self.fileDescriptor)
+        }
+    }
+
+    func startMonitoring() {
+        source?.resume()
+    }
+
+    func stopMonitoring() {
+        source?.cancel()
+        source = nil
+    }
+
+    private func getChangedFiles() -> [URL] {
+        // Minimal example, always returns [url]
+        return [url]
+    }
+}
+</file>
+
+<file path="Swift-Prompt/FolderNode.swift">
+import Foundation
+import SwiftUI
+
+struct FolderNode: Identifiable {
+    let id = UUID()
+    let name: String
+    let url: URL
+    let isDirectory: Bool
+    var children: [FolderNode] = []
+    
+    var optionalChildren: [FolderNode]? {
+        children.isEmpty ? nil : children
+    }
+}
+</file>
+
+<file path="Swift-Prompt/FolderTreeView.swift">
+//
+//  FolderTreeView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct FolderTreeView: View {
+    let rootNode: FolderNode
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                FolderNodeRow(node: rootNode)
+            }
+            .padding()
+        }
+        .background(Color.softBeigeSecondary)
+    }
+}
+
+struct FolderNodeRow: View {
+    @State private var isExpanded: Bool = false
+    let node: FolderNode
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                if node.isDirectory {
+                    Button(action: {
+                        withAnimation(.easeInOut) {
+                            isExpanded.toggle()
+                            SwiftLog("LOG: Toggling folder '\(node.name)' => \(isExpanded ? "expanded" : "collapsed")")
+                        }
+                    }) {
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .frame(width: 20)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Spacer().frame(width: 20)
+                }
+                Image(systemName: node.isDirectory ? "folder.fill" : "doc.text.fill")
+                    .foregroundColor(node.isDirectory ? .blue : .gray)
+                
+                Text(node.name)
+                    .font(.system(.body, design: .rounded))
+                    .foregroundColor(.primary)
+            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            // changed from Color.primary.opacity(0.04) to:
+            .background(Color.softBeigeSecondary.opacity(0.4).cornerRadius(6))
+            .onTapGesture {
+                if node.isDirectory {
+                    withAnimation(.easeInOut) {
+                        isExpanded.toggle()
+                    }
+                }
+            }
+            .onDrag {
+                SwiftLog("LOG: user dragged node => \(node.name)")
+                return NSItemProvider(object: node.url as NSURL)
+            }
+            
+            if isExpanded && node.isDirectory {
+                ForEach(node.children, id: \.id) { child in
+                    FolderNodeRow(node: child)
+                        .padding(.leading, 20)
+                }
+            }
+        }
+    }
+}
+</file>
+
+<file path="Swift-Prompt/LogManager.swift">
+import Foundation
+import Combine
+
+/// A singleton class that collects log messages.
+class LogManager: ObservableObject {
+    static let shared = LogManager()
+    
+    @Published var logs: String = ""
+    
+    func append(_ message: String) {
+        DispatchQueue.main.async {
+            self.logs.append(message + "\n")
+        }
+    }
+}
+
+func SwiftLog(_ message: String) {
+    print(message)
+    LogManager.shared.append(message)
+}
+</file>
+
+<file path="Swift-Prompt/MainView.swift">
+//
+//  MainView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct MainView: View {
+    @State private var selectedTab: Int = 1
+
+    var body: some View {
+        NavigationSplitView {
+            SidebarView()
+        } detail: {
+            TabView(selection: $selectedTab) {
+                MessageClientView()
+                    .tabItem {
+                        Label("LLM Updates", systemImage: "doc.on.doc")
+                    }
+                    .tag(0)
+                CodeDetailView()
+                    .tabItem {
+                        Label("Code", systemImage: "hammer.fill")
+                    }
+                    .tag(1)
+            }
+            // give a base tan background behind the tabs
+            .background(Color.softBeigeSecondary)
+        }
+    }
+}
+</file>
+
+<file path="Swift-Prompt/MessageClientView.swift">
+//
+//  MessageClientView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+import AppKit
+
+// MARK: - LLMFileUpdate Model
+struct LLMFileUpdate: Codable {
+    let fileName: String
+    let code: String
+}
+
+struct MessageClientView: View {
+    @EnvironmentObject var viewModel: ContentViewModel
+
+    @State private var llmUpdatesText: String = ""
+    @State private var showCopyBanner: Bool = false
+    @State private var showApplyBanner: Bool = false
+    @State private var applyBannerText: String = ""
+    @State private var isDropTargeted: Bool = false
+    @State private var pendingFileUpdates: [LLMFileUpdate] = []
+
+    var body: some View {
+        VSplitView {
+            AnyView(topView)
+            AnyView(bottomView)
+        }
+        .background(Color.softBeigeSecondary)
+    }
+
+    // Extract the top portion as a computed property.
+    private var topView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            updatesSection
+
+            if !pendingFileUpdates.isEmpty {
+                Text("Preview Changes")
+                    .font(.title2)
+                    .padding(.top)
+
+                DiffPreviewView(
+                    fileUpdates: pendingFileUpdates,
+                    folderURL: viewModel.folderURL,
+                    onApply: {
+                        SwiftLog("LOG: User tapped Apply. Attempting to write each LLMFileUpdate to disk...")
+                        var successfullyWritten = 0
+
+                        for update in pendingFileUpdates {
+                            do {
+                                try writeFileUpdate(update)
+                                successfullyWritten += 1
+                            } catch {
+                                let errorMsg = "Could not write \(update.fileName): \(error.localizedDescription)"
+                                SwiftLog("LOG: [ERROR] \(errorMsg)")
+                                // Fall back to Documents folder
+                                DispatchQueue.main.async {
+                                    self.saveFileWithoutSavePanel(update)
+                                }
+                            }
+                        }
+
+                        pendingFileUpdates = []
+                        if successfullyWritten > 0 {
+                            SwiftLog("LOG: Wrote \(successfullyWritten) file(s).")
+                            showApplySuccessBanner("Wrote \(successfullyWritten) file(s) to disk.")
+                        }
+                    },
+                    onCancel: {
+                        SwiftLog("LOG: User tapped Cancel. Clearing pending updates.")
+                        pendingFileUpdates = []
+                    }
+                )
+            }
+
+            Spacer()
+        }
+        .padding()
+        .overlay(ephemeralBanners, alignment: .top)
+    }
+
+    // Extract the bottom portion as a computed property.
+    private var bottomView: some View {
+        ConsoleLogView()
+            .frame(minHeight: 200)
+    }
+}
+
+// MARK: - UI Subviews
+extension MessageClientView {
+    private var updatesSection: some View {
+        Group {
+            Text("Paste LLM's Updated Code Blocks Below")
+                .font(.headline)
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isDropTargeted ? Color.softBeigeSecondary.opacity(0.6)
+                                         : Color.softBeigeSecondary.opacity(0.3))
+
+                TextEditor(text: $llmUpdatesText)
+                    .font(.system(.body, design: .monospaced))
+                    .padding(4)
+                    .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+                        self.handleFileDrop(providers: providers)
+                    }
+                    .frame(minHeight: 200)
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.secondary, lineWidth: 1)
+            )
+
+            HStack {
+
+                Spacer()
+
+                Button(action: clearUpdates) {
+                    Label("Clear", systemImage: "xmark.circle")
+                }
+                .buttonStyle(.bordered)
+
+                Button(action: applyUpdates) {
+                    Label("Parse & Apply Updates", systemImage: "wrench.and.screwdriver")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(llmUpdatesText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var ephemeralBanners: some View {
+        VStack {
+            if showCopyBanner {
+                Text("Copied to clipboard!")
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.softBeigeSecondary)
+                    .cornerRadius(8)
+                    .transition(.move(edge: .top))
+            }
+            if showApplyBanner {
+                Text(applyBannerText)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.softBeigeSecondary)
+                    .cornerRadius(8)
+                    .transition(.move(edge: .top))
+            }
+            Spacer()
+        }
+        .padding()
+    }
+}
+
+// MARK: - Actions
+extension MessageClientView {
+    private func applyUpdates() {
+        SwiftLog("LOG: Attempting to parse LLM updates from llmUpdatesText.")
+        let updates = parseFileUpdates(from: llmUpdatesText)
+        guard !updates.isEmpty else {
+            showApplySuccessBanner("No code blocks found.")
+            return
+        }
+        pendingFileUpdates = updates
+    }
+
+    private func clearUpdates() {
+        llmUpdatesText = ""
+    }
+
+    private func showApplySuccessBanner(_ text: String) {
+        applyBannerText = text
+        withAnimation {
+            showApplyBanner = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            withAnimation {
+                self.showApplyBanner = false
+            }
+        }
+    }
+
+    private func saveFileWithoutSavePanel(_ update: LLMFileUpdate) {
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let swiftPromptFolder = documentsURL.appendingPathComponent("SwiftPrompt Exports")
+
+        do {
+            try FileManager.default.createDirectory(at: swiftPromptFolder,
+                                                    withIntermediateDirectories: true,
+                                                    attributes: nil)
+        } catch {
+            SwiftLog("LOG: [ERROR] Failed to create SwiftPrompt folder: \(error)")
+        }
+
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let fileBaseName = URL(fileURLWithPath: update.fileName).deletingPathExtension().lastPathComponent
+        let fileExt = URL(fileURLWithPath: update.fileName).pathExtension
+        let safeFilename = "\(fileBaseName)-\(timestamp).\(fileExt)"
+
+        let destination = swiftPromptFolder.appendingPathComponent(safeFilename)
+
+        do {
+            try update.code.write(to: destination, atomically: true, encoding: .utf8)
+            SwiftLog("LOG: [SUCCESS] Wrote file to Documents folder: \(destination.path)")
+
+            self.showApplySuccessBanner("Saved to Documents/SwiftPrompt Exports/\(safeFilename)")
+
+            NSWorkspace.shared.selectFile(destination.path, inFileViewerRootedAtPath: swiftPromptFolder.path)
+        } catch {
+            SwiftLog("LOG: [ERROR] Failed to write to Documents folder: \(error)")
+            self.showApplySuccessBanner("Error: \(error.localizedDescription)")
+        }
+    }
+
+    private func writeFileUpdate(_ update: LLMFileUpdate) throws {
+        guard let folder = viewModel.folderURL else {
+            throw NSError(domain: "SwiftPromptErrorDomain", code: 100, userInfo: [
+                NSLocalizedDescriptionKey: "No folder selected."
+            ])
+        }
+
+        var sanitizedFilename = update.fileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if sanitizedFilename.isEmpty {
+            throw NSError(domain: "SwiftPromptErrorDomain", code: 101, userInfo: [
+                NSLocalizedDescriptionKey: "Cannot write file with empty filename."
+            ])
+        }
+
+        var targetFolder = folder
+        let components = sanitizedFilename.components(separatedBy: "/")
+        let actualFilename = components.last ?? sanitizedFilename
+
+        if components.count > 1 {
+            let subdirComponents = components.dropLast()
+            for component in subdirComponents {
+                if component == ".." || component == "." { continue }
+                targetFolder = targetFolder.appendingPathComponent(component)
+            }
+            try FileManager.default.createDirectory(at: targetFolder, withIntermediateDirectories: true)
+            sanitizedFilename = actualFilename
+        }
+
+        let destination = targetFolder.appendingPathComponent(sanitizedFilename)
+        let fm = FileManager.default
+
+        if fm.fileExists(atPath: destination.path) {
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let backupURL = destination.appendingPathExtension("backup-\(timestamp)")
+            do {
+                try fm.copyItem(at: destination, to: backupURL)
+                SwiftLog("LOG: Backed up original file to \(backupURL.lastPathComponent)")
+            } catch {
+                SwiftLog("LOG: [WARN] Could not backup file.")
+            }
+        }
+
+        try update.code.write(to: destination, atomically: true, encoding: .utf8)
+    }
+}
+
+// MARK: - Parsing LLM Code Blocks
+extension MessageClientView {
+    private func parseFileUpdates(from fullText: String) -> [LLMFileUpdate] {
+        SwiftLog("LOG: parseFileUpdates => text length: \(fullText.count)")
+
+        // 1) Try JSON
+        if fullText.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("["),
+           let data = fullText.data(using: .utf8) {
+            do {
+                let jsonUpdates = try JSONDecoder().decode([LLMFileUpdate].self, from: data)
+                return jsonUpdates
+            } catch {
+                SwiftLog("LOG: JSON decode failed => \(error.localizedDescription). Falling back to regex.")
+            }
+        }
+
+        // Simple code block extraction based on markdown-style code fences
+        var final: [LLMFileUpdate] = []
+        let codeBlockPattern = #"```(?:swift)?\s*(?:\w+\.swift)?\s*([\w/\-\.]+\.swift)(?:\s*|\n)([\s\S]*?)```"#
+        let regex = try? NSRegularExpression(pattern: codeBlockPattern, options: [])
+        
+        if let regex = regex {
+            let range = NSRange(fullText.startIndex..<fullText.endIndex, in: fullText)
+            let matches = regex.matches(in: fullText, options: [], range: range)
+            
+            for match in matches {
+                if match.numberOfRanges >= 3,
+                   let fileNameRange = Range(match.range(at: 1), in: fullText),
+                   let codeRange = Range(match.range(at: 2), in: fullText) {
+                    
+                    let fileName = String(fullText[fileNameRange])
+                    let code = String(fullText[codeRange])
+                    
+                    let update = LLMFileUpdate(fileName: fileName.trimmingCharacters(in: .whitespacesAndNewlines),
+                                              code: code.trimmingCharacters(in: .whitespacesAndNewlines))
+                    final.append(update)
+                }
+            }
+        }
+        
+        return final
+    }
+}
+
+// MARK: - Drag & Drop
+extension MessageClientView {
+    private func handleFileDrop(providers: [NSItemProvider]) -> Bool {
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, error in
+                    guard let data = item as? Data,
+                          let droppedURL = URL(dataRepresentation: data, relativeTo: nil)
+                    else { return }
+
+                    let fm = FileManager.default
+                    var isDir: ObjCBool = false
+                    if fm.fileExists(atPath: droppedURL.path, isDirectory: &isDir), isDir.boolValue {
+                        if let enumerator = fm.enumerator(at: droppedURL,
+                                                          includingPropertiesForKeys: [URLResourceKey.isRegularFileKey],
+                                                          options: [.skipsHiddenFiles]) {
+                            for case let fileURL as URL in enumerator {
+                                var subIsDir: ObjCBool = false
+                                if fm.fileExists(atPath: fileURL.path, isDirectory: &subIsDir), !subIsDir.boolValue {
+                                    self.appendFileContents(fileURL)
+                                }
+                            }
+                        }
+                    } else {
+                        self.appendFileContents(droppedURL)
+                    }
+                }
+            }
+        }
+        return true
+    }
+
+    private func appendFileContents(_ fileURL: URL) {
+        do {
+            let fileData = try Data(contentsOf: fileURL)
+            if let fileText = String(data: fileData, encoding: .utf8) {
+                DispatchQueue.main.async {
+                    self.llmUpdatesText += "\n\n// \(fileURL.lastPathComponent)\n\n"
+                    self.llmUpdatesText += fileText
+                    self.llmUpdatesText += "\n\n// --- End of \(fileURL.lastPathComponent) ---\n\n"
+                }
+            }
+        } catch {
+            SwiftLog("LOG: [ERROR] reading dropped file: \(error.localizedDescription)")
+        }
+    }
+}
+</file>
+
+<file path="Swift-Prompt/MultiSelectDropdown.swift">
+//
+//  MultiSelectDropdown.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct MultiSelectDropdown: View {
+    let title: String
+    let options: [String]
+    @Binding var selectedOptions: Set<String>
+    
+    @State private var isExpanded = false
+    @State private var searchText = ""
+
+    var filtered: [String] {
+        if searchText.isEmpty { return options }
+        return options.filter { $0.lowercased().contains(searchText.lowercased()) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                isExpanded.toggle()
+            } label: {
+                HStack {
+                    if selectedOptions.isEmpty {
+                        Text(title).foregroundColor(.secondary)
+                    } else {
+                        Text(
+                            selectedOptions.prefix(3).joined(separator: ", ")
+                            + (selectedOptions.count > 3
+                               ? " +\(selectedOptions.count - 3) more"
+                               : "")
+                        )
+                    }
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                }
+                .padding()
+                .background(Color.softBeigeSecondary.opacity(0.6)) // <--- changed
+                .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                HStack {
+                    Image(systemName: "magnifyingglass").foregroundColor(.gray)
+                    TextField("Search...", text: $searchText)
+                }
+                .padding(8)
+                .background(Color.softBeigeSecondary.opacity(0.3))
+                .cornerRadius(8)
+
+                HStack {
+                    Button("Select All") {
+                        selectedOptions = Set(options)
+                    }
+                    .disabled(selectedOptions.count == options.count)
+                    Spacer()
+                    Button("Deselect All") {
+                        selectedOptions.removeAll()
+                    }
+                    .disabled(selectedOptions.isEmpty)
+                }
+                .padding(.horizontal)
+
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(filtered, id: \.self) { opt in
+                            Button {
+                                if selectedOptions.contains(opt) {
+                                    selectedOptions.remove(opt)
+                                } else {
+                                    selectedOptions.insert(opt)
+                                }
+                            } label: {
+                                HStack {
+                                    Text(opt)
+                                    Spacer()
+                                    if selectedOptions.contains(opt) {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.accentColor)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 4)
+                                .background(
+                                    selectedOptions.contains(opt)
+                                    ? Color.accentColor.opacity(0.1)
+                                    : Color.clear
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .frame(maxHeight: 200)
+                .background(Color.softBeigeSecondary.opacity(0.2)) // <--- changed
+                .cornerRadius(8)
+            }
+        }
+        .animation(.easeInOut, value: isExpanded)
+        .background(Color.clear)
+        .cornerRadius(10)
+    }
+}
+</file>
+
+<file path="Swift-Prompt/PreferencesView.swift">
+//
+//  PreferencesView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct PreferencesView: View {
+    @Environment(\.presentationMode) var presentationMode
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Preferences")
+                .font(.largeTitle)
+                .padding(.bottom, 10)
+
+            Text("Application preferences will appear here in future versions.")
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            Button("Close") {
+                presentationMode.wrappedValue.dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+        .background(Color.softBeigeSecondary)
+        .frame(width: 450, height: 200)
+    }
+}
+</file>
+
+<file path="Swift-Prompt/PromptFormatting.swift">
+//
+//  PromptData.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+/// Holds tasks & warnings for your final prompt (which you turn into XML).
+class PromptData: ObservableObject {
+    @Published var tasks: [String] = [""]
+    @Published var warnings: [String] = [""]
+}
+</file>
+
+<file path="Swift-Prompt/SearchReplaceView.swift">
+//
+//  SearchReplaceView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct SearchReplaceView: View {
+    @EnvironmentObject var viewModel: ContentViewModel
+
+    @State private var searchText: String = ""
+    @State private var replaceText: String = ""
+    @State private var showPreview: Bool = true
+    @State private var caseSensitive: Bool = true
+    @State private var replaceComplete: Bool = false
+    @State private var replacementCount: Int = 0
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Search & Replace")
+                .font(.title)
+                .padding(.top)
+
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("Search for", text: $searchText)
+                    .textFieldStyle(.roundedBorder)
+
+                TextField("Replace with", text: $replaceText)
+                    .textFieldStyle(.roundedBorder)
+
+                Toggle("Case sensitive", isOn: $caseSensitive)
+                Toggle("Show preview before replacing", isOn: $showPreview)
+            }
+            .padding()
+
+            if showPreview && !searchText.isEmpty {
+                previewSection
+            }
+
+            HStack {
+                Button("Cancel") {
+                    NSApp.mainWindow?.endSheet(NSApp.mainWindow?.attachedSheet ?? NSWindow())
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Spacer()
+
+                Button("Replace All") {
+                    performReplace()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(searchText.isEmpty || viewModel.textAreaContents.isEmpty)
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding()
+
+            if replaceComplete {
+                Text("Replaced \(replacementCount) occurrences")
+                    .foregroundColor(.green)
+                    .padding(.bottom)
+            }
+        }
+        .frame(width: 500, height: 400)
+        .background(Color.softBeigeSecondary) // <--- soft tan background
+    }
+
+    private var previewSection: some View {
+        VStack(alignment: .leading) {
+            Text("Preview:")
+                .font(.headline)
+
+            ScrollView {
+                Text(highlightedPreview)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    // replaced .background(Color.secondary.opacity(0.1))
+                    // with the slightly darker tan:
+                    .background(Color.softBeigeSecondary)
+                    .cornerRadius(8)
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    private var highlightedPreview: AttributedString {
+        let content = viewModel.textAreaContents
+        guard !searchText.isEmpty else { return AttributedString(content) }
+
+        var attributedString = AttributedString(content)
+        let searchOptions: NSString.CompareOptions = caseSensitive ? [] : .caseInsensitive
+        var searchPos = content.startIndex
+
+        while let range = content.range(of: searchText, options: searchOptions, range: searchPos..<content.endIndex) {
+            if let attributedRange = Range(range, in: attributedString) {
+                attributedString[attributedRange].backgroundColor = .yellow
+                attributedString[attributedRange].foregroundColor = .black
+            }
+            searchPos = range.upperBound
+        }
+
+        return attributedString
+    }
+
+    private func performReplace() {
+        let content = viewModel.textAreaContents
+        let searchOptions: NSString.CompareOptions = caseSensitive ? [] : .caseInsensitive
+
+        let newContent = content.replacingOccurrences(of: searchText,
+                                                      with: replaceText,
+                                                      options: searchOptions)
+
+        replacementCount = content.components(separatedBy: searchText).count - 1
+        viewModel.textAreaContents = newContent
+
+        replaceComplete = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation {
+                replaceComplete = false
+            }
+        }
+
+        // Close the sheet after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            NSApp.mainWindow?.endSheet(NSApp.mainWindow?.attachedSheet ?? NSWindow())
+        }
+    }
+}
+
+struct SearchReplaceView_Previews: PreviewProvider {
+    static var previews: some View {
+        SearchReplaceView()
+            .environmentObject(ContentViewModel())
+    }
+}
+</file>
+
+<file path="Swift-Prompt/SidebarPromptFormattingView.swift">
+//
+//  SidebarPromptFormattingView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct SidebarPromptFormattingView: View {
+    @EnvironmentObject var promptData: PromptData
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Goals:")
+                .font(.headline)
+            PromptTaskListEditor(tasks: $promptData.tasks)
+
+            Divider()
+
+            Text("Warnings:")
+                .font(.headline)
+            PromptWarningListEditor(warnings: $promptData.warnings)
+
+            Spacer()
+        }
+        .padding()
+        .background(Color.softBeigeSecondary)
+    }
+}
+
+struct PromptTaskListEditor: View {
+    @Binding var tasks: [String]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(tasks.indices, id: \.self) { i in
+                HStack {
+                    TextField("Task \(i+1)", text: $tasks[i])
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    if tasks.count > 1 {
+                        Button {
+                            tasks.remove(at: i)
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+            }
+            Button("+ Add Task") {
+                tasks.append("")
+            }
+        }
+    }
+}
+
+struct PromptWarningListEditor: View {
+    @Binding var warnings: [String]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(warnings.indices, id: \.self) { i in
+                HStack {
+                    TextField("Warning \(i+1)", text: $warnings[i])
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    if warnings.count > 1 {
+                        Button {
+                            warnings.remove(at: i)
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+            }
+            Button("+ Add Warning") {
+                warnings.append("")
+            }
+        }
+    }
+}
+</file>
+
+<file path="Swift-Prompt/SidebarView.swift">
+//
+//  SidebarView.swift
+//  SwiftPrompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+struct SidebarView: View {
+    @EnvironmentObject var viewModel: ContentViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            headerSection
+            folderSelectionSection
+            fileTypesSelectionSection
+            actionsSection
+            folderTreeSection
+            Spacer()
+        }
+        .padding()
+        // Soft tan background
+        .background(Color.softBeigeSecondary)
+        .frame(minWidth: 300)
+    }
+    
+    private var headerSection: some View {
+        VStack {
+            Image(systemName: "doc.on.clipboard")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60, height: 60)
+                .foregroundColor(.accentColor)
+            Text("Swift Prompt")
+                .font(.title2)
+                .fontWeight(.semibold)
+            Text("Aggregate code files from a folder or by dragging them below.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+    
+    private var folderSelectionSection: some View {
+        Section(header: Text("Selected Folder").font(.subheadline).fontWeight(.bold)) {
+            HStack {
+                TextField("Selected Folder",
+                          text: Binding(get: { viewModel.folderURL?.path ?? "" },
+                                        set: { _ in }))
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .disabled(true)
+
+                Button("Browse") {
+                    SwiftLog("LOG: Sidebar => user tapped Browse.")
+                    viewModel.selectFolder()
+                }
+                .buttonStyle(.bordered)
+                .disabled(viewModel.isProcessing)
+            }
+        }
+    }
+    
+    private var fileTypesSelectionSection: some View {
+        Section(header: Text("Select File Types to Include")
+                    .font(.subheadline)
+                    .fontWeight(.bold)) {
+            MultiSelectDropdown(
+                title: "Select File Types",
+                options: viewModel.availableFileTypes,
+                selectedOptions: $viewModel.selectedFileTypes
+            )
+        }
+    }
+    
+    private var actionsSection: some View {
+        Section(header: Text("Task List, Warnings & Actions")
+                    .font(.subheadline)
+                    .fontWeight(.bold)) {
+            SidebarPromptFormattingView()
+            Divider()
+            Button(role: .destructive) {
+                viewModel.clearAll()
+            } label: {
+                Label("Clear All", systemImage: "trash")
+            }
+            .buttonStyle(.bordered)
+            .foregroundColor(.red)
+        }
+    }
+    
+    private var folderTreeSection: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Folder Tree")
+                .font(.subheadline)
+                .fontWeight(.bold)
+            if let rootNode = viewModel.folderTree {
+                FolderTreeView(rootNode: rootNode)
+                    .frame(minHeight: 200)
+            } else {
+                Text("No folder selected yet.")
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+struct SidebarView_Previews: PreviewProvider {
+    static var previews: some View {
+        SidebarView()
+            .environmentObject(ContentViewModel())
+    }
+}
+</file>
+
+<file path="Swift-Prompt/Swift-Prompt.entitlements">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+</dict>
+</plist>
+</file>
+
+<file path="Swift-Prompt/Swift-PromptApp.swift">
+//
+//  Swift-PromptApp.swift
+//  Swift-Prompt
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import SwiftUI
+
+@main
+struct SwiftPromptApp: App {
+    @StateObject private var viewModel = ContentViewModel()
+    @StateObject private var promptData = PromptData()
+
+    var body: some Scene {
+        WindowGroup {
+            MainView()
+                .environmentObject(viewModel)
+                .environmentObject(promptData)
+                // Optional: a subtle brown accent
+                .accentColor(.brown)
+        }
+        Settings {
+            PreferencesView()
+                .environmentObject(viewModel)
+        }
+    }
+}
+</file>
+
+<file path="Swift-Prompt/theme.swift">
+import SwiftUI
+
+extension Color {
+
+    static let softBeigeSecondary = Color(red: 0.90, green: 0.92, blue: 0.94)
+    
+    }
+</file>
+
+<file path="Swift-Prompt.xcodeproj/project.pbxproj">
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		2E9686702C9FBACD0034BABC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2E9686562C9FBACC0034BABC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2E96865D2C9FBACC0034BABC;
+			remoteInfo = "Swift-Prompt";
+		};
+		2E96867A2C9FBACD0034BABC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2E9686562C9FBACC0034BABC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2E96865D2C9FBACC0034BABC;
+			remoteInfo = "Swift-Prompt";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		2E96865E2C9FBACC0034BABC /* Swift-Prompt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Swift-Prompt.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E96866F2C9FBACD0034BABC /* Swift-PromptTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Swift-PromptTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E9686792C9FBACD0034BABC /* Swift-PromptUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Swift-PromptUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		2E9686602C9FBACC0034BABC /* Swift-Prompt */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Swift-Prompt";
+			sourceTree = "<group>";
+		};
+		2E9686722C9FBACD0034BABC /* Swift-PromptTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Swift-PromptTests";
+			sourceTree = "<group>";
+		};
+		2E96867C2C9FBACD0034BABC /* Swift-PromptUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Swift-PromptUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2E96865B2C9FBACC0034BABC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E96866C2C9FBACD0034BABC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E9686762C9FBACD0034BABC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2E9686552C9FBACC0034BABC = {
+			isa = PBXGroup;
+			children = (
+				2E9686602C9FBACC0034BABC /* Swift-Prompt */,
+				2E9686722C9FBACD0034BABC /* Swift-PromptTests */,
+				2E96867C2C9FBACD0034BABC /* Swift-PromptUITests */,
+				2E96865F2C9FBACC0034BABC /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2E96865F2C9FBACC0034BABC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2E96865E2C9FBACC0034BABC /* Swift-Prompt.app */,
+				2E96866F2C9FBACD0034BABC /* Swift-PromptTests.xctest */,
+				2E9686792C9FBACD0034BABC /* Swift-PromptUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2E96865D2C9FBACC0034BABC /* Swift-Prompt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2E9686832C9FBACD0034BABC /* Build configuration list for PBXNativeTarget "Swift-Prompt" */;
+			buildPhases = (
+				2E96865A2C9FBACC0034BABC /* Sources */,
+				2E96865B2C9FBACC0034BABC /* Frameworks */,
+				2E96865C2C9FBACC0034BABC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				2E9686602C9FBACC0034BABC /* Swift-Prompt */,
+			);
+			name = "Swift-Prompt";
+			packageProductDependencies = (
+			);
+			productName = "Swift-Prompt";
+			productReference = 2E96865E2C9FBACC0034BABC /* Swift-Prompt.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2E96866E2C9FBACD0034BABC /* Swift-PromptTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2E9686862C9FBACD0034BABC /* Build configuration list for PBXNativeTarget "Swift-PromptTests" */;
+			buildPhases = (
+				2E96866B2C9FBACD0034BABC /* Sources */,
+				2E96866C2C9FBACD0034BABC /* Frameworks */,
+				2E96866D2C9FBACD0034BABC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2E9686712C9FBACD0034BABC /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2E9686722C9FBACD0034BABC /* Swift-PromptTests */,
+			);
+			name = "Swift-PromptTests";
+			packageProductDependencies = (
+			);
+			productName = "Swift-PromptTests";
+			productReference = 2E96866F2C9FBACD0034BABC /* Swift-PromptTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		2E9686782C9FBACD0034BABC /* Swift-PromptUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2E9686892C9FBACD0034BABC /* Build configuration list for PBXNativeTarget "Swift-PromptUITests" */;
+			buildPhases = (
+				2E9686752C9FBACD0034BABC /* Sources */,
+				2E9686762C9FBACD0034BABC /* Frameworks */,
+				2E9686772C9FBACD0034BABC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2E96867B2C9FBACD0034BABC /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2E96867C2C9FBACD0034BABC /* Swift-PromptUITests */,
+			);
+			name = "Swift-PromptUITests";
+			packageProductDependencies = (
+			);
+			productName = "Swift-PromptUITests";
+			productReference = 2E9686792C9FBACD0034BABC /* Swift-PromptUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2E9686562C9FBACC0034BABC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					2E96865D2C9FBACC0034BABC = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					2E96866E2C9FBACD0034BABC = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 2E96865D2C9FBACC0034BABC;
+					};
+					2E9686782C9FBACD0034BABC = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 2E96865D2C9FBACC0034BABC;
+					};
+				};
+			};
+			buildConfigurationList = 2E9686592C9FBACC0034BABC /* Build configuration list for PBXProject "Swift-Prompt" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 2E9686552C9FBACC0034BABC;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2E96865F2C9FBACC0034BABC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2E96865D2C9FBACC0034BABC /* Swift-Prompt */,
+				2E96866E2C9FBACD0034BABC /* Swift-PromptTests */,
+				2E9686782C9FBACD0034BABC /* Swift-PromptUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		2E96865C2C9FBACC0034BABC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E96866D2C9FBACD0034BABC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E9686772C9FBACD0034BABC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2E96865A2C9FBACC0034BABC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E96866B2C9FBACD0034BABC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E9686752C9FBACD0034BABC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2E9686712C9FBACD0034BABC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2E96865D2C9FBACC0034BABC /* Swift-Prompt */;
+			targetProxy = 2E9686702C9FBACD0034BABC /* PBXContainerItemProxy */;
+		};
+		2E96867B2C9FBACD0034BABC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2E96865D2C9FBACC0034BABC /* Swift-Prompt */;
+			targetProxy = 2E96867A2C9FBACD0034BABC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2E9686812C9FBACD0034BABC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		2E9686822C9FBACD0034BABC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		2E9686842C9FBACD0034BABC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Swift-Prompt/Swift-Prompt.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Swift-Prompt/Preview Content\"";
+				DEVELOPMENT_TEAM = T7P5TPV77F;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.startup.image-quest.Swift-Prompt";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		2E9686852C9FBACD0034BABC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Swift-Prompt/Swift-Prompt.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Swift-Prompt/Preview Content\"";
+				DEVELOPMENT_TEAM = T7P5TPV77F;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.startup.image-quest.Swift-Prompt";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		2E9686872C9FBACD0034BABC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T7P5TPV77F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.startup.image-quest.Swift-PromptTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Swift-Prompt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Swift-Prompt";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		2E9686882C9FBACD0034BABC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T7P5TPV77F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.startup.image-quest.Swift-PromptTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Swift-Prompt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Swift-Prompt";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		2E96868A2C9FBACD0034BABC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T7P5TPV77F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.startup.image-quest.Swift-PromptUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = "Swift-Prompt";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		2E96868B2C9FBACD0034BABC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = T7P5TPV77F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.startup.image-quest.Swift-PromptUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = "Swift-Prompt";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2E9686592C9FBACC0034BABC /* Build configuration list for PBXProject "Swift-Prompt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E9686812C9FBACD0034BABC /* Debug */,
+				2E9686822C9FBACD0034BABC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2E9686832C9FBACD0034BABC /* Build configuration list for PBXNativeTarget "Swift-Prompt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E9686842C9FBACD0034BABC /* Debug */,
+				2E9686852C9FBACD0034BABC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2E9686862C9FBACD0034BABC /* Build configuration list for PBXNativeTarget "Swift-PromptTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E9686872C9FBACD0034BABC /* Debug */,
+				2E9686882C9FBACD0034BABC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2E9686892C9FBACD0034BABC /* Build configuration list for PBXNativeTarget "Swift-PromptUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2E96868A2C9FBACD0034BABC /* Debug */,
+				2E96868B2C9FBACD0034BABC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2E9686562C9FBACC0034BABC /* Project object */;
+}
+</file>
+
+<file path="Swift-PromptTests/LLMclipTests.swift">
+//
+//  Swift-PromptTests.swift
+//  Swift-PromptTests
+//
+//  Created by Ian MacDonald on 2024-09-21.
+//
+
+import Testing
+
+struct SwiftPromptTests {
+
+    @Test func exampleTest() async throws {
+        #expect(true)
+    }
+
+}
+</file>
+
+<file path="Swift-PromptUITests/LLMclipUITests.swift">
+//
+//  Swift-PromptUITests.swift
+//  Swift-PromptUITests
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import XCTest
+
+final class SwiftPromptUITests: XCTestCase {
+
+    override func setUpWithError() throws {
+        // Put setup code here. This method is called before the invocation of each test method in the class.
+        // In UI tests it is usually best to stop immediately when a failure occurs.
+        continueAfterFailure = false
+    }
+
+    override func tearDownWithError() throws {
+        // Put teardown code here.
+    }
+
+    @MainActor
+    func testExample() throws {
+        // UI tests must launch the application that they test.
+        let app = XCUIApplication()
+        app.launch()
+
+        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    }
+
+    @MainActor
+    func testLaunchPerformance() throws {
+        if #available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 7.0, *) {
+            // This measures how long it takes to launch your application.
+            measure(metrics: [XCTApplicationLaunchMetric()]) {
+                XCUIApplication().launch()
+            }
+        }
+    }
+}
+</file>
+
+<file path="Swift-PromptUITests/LLMclipUITestsLaunchTests.swift">
+//
+//  Swift-PromptUITestsLaunchTests.swift
+//  Swift-PromptUITests
+//
+//  Created by Ian MacDonald on 2025-02-01.
+//
+
+import XCTest
+
+final class SwiftPromptUITestsLaunchTests: XCTestCase {
+
+    override class var runsForEachTargetApplicationUIConfiguration: Bool {
+        true
+    }
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+    }
+
+    @MainActor
+    func testLaunch() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Default screenshot of app launch
+
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Launch Screen"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}
+</file>
+
+<file path=".gitignore">
+# Xcode build data
+build/
+DerivedData
+*.xcuserstate
+*.xcworkspace
+xcuserdata
+*.pbxuser
+/.swiftpm/xcode/package.xcworkspace/xcuserdata/
+
+# SwiftPM build artifacts
+.build/
+/Packages/
+
+# macOS system files
+.DS_Store
+
+# Credentials and API keys
+*.env
+Secrets.plist
+secrets.json
+</file>
+
+<file path="CLAUDE.md">
+# Swift-Prompt Development Guide
+
+## Build/Test Commands
+- Build: Open project in Xcode and use ⌘+B
+- Run: Use ⌘+R in Xcode
+- Test: Use ⌘+U to run all tests
+- Run single test: Click the diamond icon next to a test function in Xcode
+
+## Code Style Guidelines
+- **Imports**: Group Foundation/SwiftUI imports first, followed by app modules
+- **Formatting**: 4-space indentation, 100 character line limit
+- **Naming**: Use camelCase for variables/functions, PascalCase for types
+- **Documentation**: Add comments above complex functions, use /// for documentation
+- **Error Handling**: Use try/catch with descriptive error messages, log with SwiftLog()
+- **SwiftUI**: Use @ViewBuilder for complex view composition, extract subviews to extensions
+- **Color Theme**: Use predefined theme colors (softBeigeSecondary, etc.) for consistency
+
+## Project Structure
+- View files are in the main Swift-Prompt directory
+- Model and utility files are in subdirectories
+- Tests are in Swift-PromptTests directory
+</file>
+
+<file path="DiffPreviewView.swift">
+import SwiftUI
+
+struct DiffPreviewView: View {
+    var body: some View {
+        Text("Preview")
+    }
+}
+</file>
+
+<file path="MessageClientView.swift">
+import SwiftUI
+
+struct MessageClientView: View {
+    var body: some View {
+        Text("Hello, world!")
+    }
+}
+</file>
+
+<file path="LICENSE">
+MIT License
+
+Copyright (c) 2025 Ian MacDonald
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</file>
+
+<file path="README.md">
+SwiftPrompt is a macOS application designed to facilitate code management, AI prompt creation, and AI response handling. It enables users to:
+
+Aggregate code files into a single view
+Format code with tasks/warnings for AI prompts
+Parse and apply code updates from AI responses
+Preview and manage file changes
+Support chat-based interactions with LLMs
+</file>
+
+</files>

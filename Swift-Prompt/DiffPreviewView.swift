@@ -25,8 +25,8 @@ struct DiffPreviewView: View {
                     .padding()
             } else {
                 List {
-                    ForEach(fileUpdates, id: \.fileName) { update in
-                        DisclosureGroup(update.fileName) {
+                    ForEach(fileUpdates) { update in
+                        DisclosureGroup(update.path) {
                             diffView(for: update)
                         }
                     }
@@ -61,9 +61,9 @@ extension DiffPreviewView {
     }
 
     private func getDiffLines(for update: LLMFileUpdate) -> [DiffLine] {
-        SwiftLog("LOG: reading old contents for: \(update.fileName)")
-        let oldText = readOldFileContents(for: update.fileName)
-        let newText = update.code
+        SwiftLog("LOG: reading old contents for: \(update.path)")
+        let oldText = readOldFileContents(for: update.path)
+        let newText = update.content
         return computeLineDiff(oldText: oldText, newText: newText)
     }
 

@@ -9,9 +9,161 @@ import SwiftUI
 import AppKit
 
 // MARK: - LLMFileUpdate Model
-struct LLMFileUpdate: Codable {
-    let fileName: String
-    let code: String
+struct LLMFileUpdate: Codable, Identifiable {
+    let id = UUID()
+    let path: String
+    let content: String
+    let operation: FileOperation = .update
+    
+    // Legacy support
+    init(fileName: String, code: String) {
+        self.path = fileName
+        self.content = code
+    }
+    
+    init(path: String, content: String, operation: FileOperation = .update) {
+        self.path = path
+        self.content = content
+    }
+    
+    // Codable support for legacy JSON format
+    enum CodingKeys: String, CodingKey {
+        case path = "fileName"
+        case content = "code"
+    }
+}
+
+enum FileOperation {
+    case update
+    case create
+    case delete
+}
+
+// MARK: - Language Pattern
+struct LanguagePattern {
+    let language: String
+    let extensions: [String]
+    let aliases: [String]
+}
+
+// MARK: - Enhanced Response Parser
+class EnhancedResponseParser {
+    static let languagePatterns: [LanguagePattern] = [
+        LanguagePattern(language: "swift", extensions: ["swift"], aliases: []),
+        LanguagePattern(language: "javascript", extensions: ["js", "jsx"], aliases: ["js", "javascript"]),
+        LanguagePattern(language: "typescript", extensions: ["ts", "tsx"], aliases: ["ts", "typescript"]),
+        LanguagePattern(language: "python", extensions: ["py"], aliases: ["python", "py"]),
+        LanguagePattern(language: "java", extensions: ["java"], aliases: []),
+        LanguagePattern(language: "kotlin", extensions: ["kt", "kts"], aliases: ["kotlin"]),
+        LanguagePattern(language: "html", extensions: ["html", "htm"], aliases: []),
+        LanguagePattern(language: "css", extensions: ["css", "scss", "sass"], aliases: []),
+        LanguagePattern(language: "json", extensions: ["json"], aliases: []),
+        LanguagePattern(language: "xml", extensions: ["xml"], aliases: []),
+        LanguagePattern(language: "yaml", extensions: ["yaml", "yml"], aliases: []),
+        LanguagePattern(language: "shell", extensions: ["sh", "bash"], aliases: ["bash", "sh", "shell"]),
+        LanguagePattern(language: "ruby", extensions: ["rb"], aliases: ["ruby", "rb"]),
+        LanguagePattern(language: "go", extensions: ["go"], aliases: ["go", "golang"]),
+        LanguagePattern(language: "rust", extensions: ["rs"], aliases: ["rust", "rs"]),
+        LanguagePattern(language: "cpp", extensions: ["cpp", "cc", "cxx", "c++"], aliases: ["cpp", "c++"]),
+        LanguagePattern(language: "c", extensions: ["c", "h"], aliases: [])
+    ]
+    
+    static func parseResponse(_ response: String) -> [LLMFileUpdate] {
+        var updates: [LLMFileUpdate] = []
+        
+        // Try multiple patterns to extract code blocks
+        let patterns = [
+            // Pattern 1: Standard markdown with language
+            #"```(\w+)?\s*\n([^\n]+\.\w+)?\s*\n([\s\S]*?)```"#,
+            
+            // Pattern 2: Filename on first line after fence
+            #"```(\w+)?\s*\n([^\n]+\.\w+)\s*\n([\s\S]*?)```"#,
+            
+            // Pattern 3: Filename as comment
+            #"```(\w+)?\s*\n(?://|#|--)\s*([^\n]+\.\w+)\s*\n([\s\S]*?)```"#,
+            
+            // Pattern 4: Combined language:filename
+            #"```(\w+):([^\n]+\.\w+)\s*\n([\s\S]*?)```"#,
+            
+            // Pattern 5: No language, just filename
+            #"```\s*\n([^\n]+\.\w+)\s*\n([\s\S]*?)```"#
+        ]
+        
+        for pattern in patterns {
+            updates.append(contentsOf: extractWithPattern(pattern, from: response))
+        }
+        
+        // Remove duplicates based on filename
+        var seen = Set<String>()
+        return updates.filter { update in
+            guard !seen.contains(update.path) else { return false }
+            seen.insert(update.path)
+            return true
+        }
+    }
+    
+    private static func extractWithPattern(_ pattern: String, from text: String) -> [LLMFileUpdate] {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) else {
+            return []
+        }
+        
+        var updates: [LLMFileUpdate] = []
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        
+        for match in matches {
+            if let update = parseMatch(match, in: text) {
+                updates.append(update)
+            }
+        }
+        
+        return updates
+    }
+    
+    private static func parseMatch(_ match: NSTextCheckingResult, in text: String) -> LLMFileUpdate? {
+        let nsString = text as NSString
+        
+        // Extract components based on capture groups
+        var language: String?
+        var filename: String?
+        var content: String?
+        
+        // Flexible extraction based on number of groups
+        for i in 1..<match.numberOfRanges {
+            let range = match.range(at: i)
+            guard range.location != NSNotFound else { continue }
+            
+            let captured = nsString.substring(with: range)
+            
+            // Detect what this capture group contains
+            if captured.contains(".") && captured.count < 100 {
+                // Likely a filename
+                filename = captured
+            } else if captured.count < 20 && languagePatterns.contains(where: { $0.aliases.contains(captured.lowercased()) || $0.language == captured.lowercased() }) {
+                // Likely a language identifier
+                language = captured
+            } else if captured.count > 20 {
+                // Likely the content
+                content = captured
+            }
+        }
+        
+        // Validate we have minimum required data
+        guard let file = filename, let code = content else {
+            return nil
+        }
+        
+        // If no language detected, try to infer from extension
+        if language == nil {
+            let ext = (file as NSString).pathExtension
+            language = languagePatterns.first { $0.extensions.contains(ext.lowercased()) }?.language
+        }
+        
+        return LLMFileUpdate(
+            path: file.trimmingCharacters(in: .whitespacesAndNewlines),
+            content: code,
+            operation: .update
+        )
+    }
 }
 
 struct MessageClientView: View {
@@ -54,7 +206,7 @@ struct MessageClientView: View {
                                 try writeFileUpdate(update)
                                 successfullyWritten += 1
                             } catch {
-                                let errorMsg = "Could not write \(update.fileName): \(error.localizedDescription)"
+                                let errorMsg = "Could not write \(update.path): \(error.localizedDescription)"
                                 SwiftLog("LOG: [ERROR] \(errorMsg)")
                                 // Fall back to Documents folder
                                 DispatchQueue.main.async {
@@ -198,14 +350,14 @@ extension MessageClientView {
         }
 
         let timestamp = Int(Date().timeIntervalSince1970)
-        let fileBaseName = URL(fileURLWithPath: update.fileName).deletingPathExtension().lastPathComponent
-        let fileExt = URL(fileURLWithPath: update.fileName).pathExtension
+        let fileBaseName = URL(fileURLWithPath: update.path).deletingPathExtension().lastPathComponent
+        let fileExt = URL(fileURLWithPath: update.path).pathExtension
         let safeFilename = "\(fileBaseName)-\(timestamp).\(fileExt)"
 
         let destination = swiftPromptFolder.appendingPathComponent(safeFilename)
 
         do {
-            try update.code.write(to: destination, atomically: true, encoding: .utf8)
+            try update.content.write(to: destination, atomically: true, encoding: .utf8)
             SwiftLog("LOG: [SUCCESS] Wrote file to Documents folder: \(destination.path)")
 
             self.showApplySuccessBanner("Saved to Documents/SwiftPrompt Exports/\(safeFilename)")
@@ -224,7 +376,7 @@ extension MessageClientView {
             ])
         }
 
-        var sanitizedFilename = update.fileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        var sanitizedFilename = update.path.trimmingCharacters(in: .whitespacesAndNewlines)
         if sanitizedFilename.isEmpty {
             throw NSError(domain: "SwiftPromptErrorDomain", code: 101, userInfo: [
                 NSLocalizedDescriptionKey: "Cannot write file with empty filename."
@@ -259,7 +411,7 @@ extension MessageClientView {
             }
         }
 
-        try update.code.write(to: destination, atomically: true, encoding: .utf8)
+        try update.content.write(to: destination, atomically: true, encoding: .utf8)
     }
 }
 
@@ -267,43 +419,35 @@ extension MessageClientView {
 extension MessageClientView {
     private func parseFileUpdates(from fullText: String) -> [LLMFileUpdate] {
         SwiftLog("LOG: parseFileUpdates => text length: \(fullText.count)")
-
-        // 1) Try JSON
-        if fullText.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("["),
-           let data = fullText.data(using: .utf8) {
-            do {
-                let jsonUpdates = try JSONDecoder().decode([LLMFileUpdate].self, from: data)
+        
+        // Use EnhancedResponseParser for code block extraction
+        let updates = EnhancedResponseParser.parseResponse(fullText)
+        
+        if updates.isEmpty {
+            // Try JSON parsing as fallback
+            if let jsonUpdates = tryParseJSON(fullText) {
                 return jsonUpdates
-            } catch {
-                SwiftLog("LOG: JSON decode failed => \(error.localizedDescription). Falling back to regex.")
             }
-        }
-
-        // Simple code block extraction based on markdown-style code fences
-        var final: [LLMFileUpdate] = []
-        let codeBlockPattern = #"```(?:swift)?\s*(?:\w+\.swift)?\s*([\w/\-\.]+\.swift)(?:\s*|\n)([\s\S]*?)```"#
-        let regex = try? NSRegularExpression(pattern: codeBlockPattern, options: [])
-        
-        if let regex = regex {
-            let range = NSRange(fullText.startIndex..<fullText.endIndex, in: fullText)
-            let matches = regex.matches(in: fullText, options: [], range: range)
             
-            for match in matches {
-                if match.numberOfRanges >= 3,
-                   let fileNameRange = Range(match.range(at: 1), in: fullText),
-                   let codeRange = Range(match.range(at: 2), in: fullText) {
-                    
-                    let fileName = String(fullText[fileNameRange])
-                    let code = String(fullText[codeRange])
-                    
-                    let update = LLMFileUpdate(fileName: fileName.trimmingCharacters(in: .whitespacesAndNewlines),
-                                              code: code.trimmingCharacters(in: .whitespacesAndNewlines))
-                    final.append(update)
-                }
-            }
+            SwiftLog("LOG: No updates found in the response")
         }
         
-        return final
+        return updates
+    }
+    
+    private func tryParseJSON(_ text: String) -> [LLMFileUpdate]? {
+        guard text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("["),
+              let data = text.data(using: .utf8) else {
+            return nil
+        }
+        
+        do {
+            let jsonUpdates = try JSONDecoder().decode([LLMFileUpdate].self, from: data)
+            return jsonUpdates
+        } catch {
+            SwiftLog("LOG: JSON decode failed => \(error.localizedDescription)")
+            return nil
+        }
     }
 }
 

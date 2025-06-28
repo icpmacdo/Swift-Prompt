@@ -20,6 +20,9 @@ class ContentViewModel: ObservableObject {
     @Published var errorMessage = ""
     @Published var showErrorAlert = false
     @Published var commitMessage: String = ""
+    @Published var currentError: SwiftPromptError?
+    @Published var showingError = false
+    @Published var selectedExportFormat: ExportFormat = .xml
     
     // For controlling which file types to load
     @Published var availableFileTypes: [String] = []
@@ -257,7 +260,9 @@ class ContentViewModel: ObservableObject {
         }
         
         let excludedDirs = ["node_modules", ".git", "dist", "build"]
-        var combined = ""
+        
+        // First pass: collect all files to process
+        var filesToProcess: [URL] = []
         for case let fileURL as URL in enumerator {
             let vals = try fileURL.resourceValues(forKeys: [.isDirectoryKey, .isRegularFileKey])
             if vals.isDirectory == true, excludedDirs.contains(fileURL.lastPathComponent) {
@@ -267,29 +272,86 @@ class ContentViewModel: ObservableObject {
             if vals.isRegularFile == true {
                 let ext = fileURL.pathExtension.lowercased()
                 if selectedFileTypes.contains("*") || selectedFileTypes.contains(ext) {
+                    filesToProcess.append(fileURL)
+                }
+            }
+        }
+        
+        // Update total files count
+        await MainActor.run {
+            self.totalFiles = filesToProcess.count
+            self.filesProcessed = 0
+        }
+        
+        // Process files concurrently
+        let concurrentLimit = 10 // Process up to 10 files at once
+        var results: [(index: Int, content: String)] = []
+        
+        await withTaskGroup(of: (Int, String?).self) { group in
+            for (index, fileURL) in filesToProcess.enumerated() {
+                // Limit concurrent tasks
+                if index >= concurrentLimit {
+                    if let result = await group.next() {
+                        if let content = result.1 {
+                            results.append((result.0, content))
+                        }
+                    }
+                }
+                
+                group.addTask { [weak self] in
+                    guard let self = self else { return (index, nil) }
+                    
                     do {
-                        let data = try Data(contentsOf: fileURL)
-                        let text = String(data: data, encoding: .utf8) ?? ""
+                        let text = try self.readFileContent(at: fileURL)
+                        var fileContent = ""
+                        
                         let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
                         if let first = lines.first, first.trimmingCharacters(in: .whitespaces).hasPrefix("// \(fileURL.lastPathComponent)") {
-                            combined += text
+                            fileContent = text
                         } else {
-                            combined += "// \(fileURL.lastPathComponent)\n\n"
-                            combined += text
+                            fileContent = "// \(fileURL.lastPathComponent)\n\n"
+                            fileContent += text
                         }
-                        combined += "\n\n// --- End of \(fileURL.lastPathComponent) ---\n\n"
+                        fileContent += "\n\n// --- End of \(fileURL.lastPathComponent) ---\n\n"
                         
                         await MainActor.run {
                             self.filesCopied += 1
                             self.filesProcessed += 1
-                            self.progressMessage = "Processing \(self.filesProcessed) of \(self.totalFiles)..."
+                            let percentage = Int((Double(self.filesProcessed) / Double(self.totalFiles)) * 100)
+                            self.progressMessage = "Processing files... \(percentage)% (\(self.filesProcessed)/\(self.totalFiles))"
                         }
+                        
+                        return (index, fileContent)
+                    } catch let error as SwiftPromptError {
+                        SwiftLog("LOG: [ERROR] \(error.localizedDescription)")
+                        await MainActor.run {
+                            self.handleError(error)
+                        }
+                        return (index, nil)
                     } catch {
                         SwiftLog("LOG: [ERROR] reading \(fileURL.lastPathComponent): \(error.localizedDescription)")
+                        return (index, nil)
                     }
                 }
             }
+            
+            // Collect remaining results
+            for await result in group {
+                if let content = result.1 {
+                    results.append((result.0, content))
+                }
+            }
         }
+        
+        // Sort results by index to maintain file order
+        results.sort { $0.index < $1.index }
+        
+        // Combine all file contents
+        var combined = ""
+        for result in results {
+            combined += result.content
+        }
+        
         return combined
     }
     
@@ -302,6 +364,18 @@ class ContentViewModel: ObservableObject {
             self.loadFiles(from: folderURL)
         }
         fileMonitor?.startMonitoring()
+    }
+    
+    // MARK: - Error Handling
+    func handleError(_ error: SwiftPromptError) {
+        currentError = error
+        showingError = true
+        
+        // Log error
+        SwiftLog(
+            "LOG: [ERROR] \(error.localizedDescription)",
+            context: "ContentViewModel"
+        )
     }
     
     // MARK: - Clear All Data
@@ -323,6 +397,57 @@ class ContentViewModel: ObservableObject {
                 self.folderTree = nil
                 self.selectedFileTypes = Set(self.availableFileTypes)
             }
+        }
+    }
+    
+    // MARK: - Safe File Operations
+    func readFileContent(at url: URL) throws -> String {
+        do {
+            // Security check for path traversal
+            if let folderPath = folderURL?.path {
+                let normalizedPath = url.path
+                let normalizedFolderPath = folderPath
+                
+                // Check for path traversal attempts
+                if normalizedPath.contains("../") || normalizedPath.contains("..\\") {
+                    throw SwiftPromptError.pathTraversalAttempt(path: url.path)
+                }
+                
+                // Ensure file is within selected folder
+                if !normalizedPath.hasPrefix(normalizedFolderPath) {
+                    throw SwiftPromptError.pathTraversalAttempt(path: url.path)
+                }
+            }
+            
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                throw SwiftPromptError.fileNotFound(path: url.path)
+            }
+            
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            let fileSize = attributes[.size] as? Int ?? 0
+            
+            // Check file size (10MB limit)
+            if fileSize > 10_000_000 {
+                throw SwiftPromptError.fileTooLarge(path: url.path, size: fileSize)
+            }
+            
+            // Try to read with UTF-8 first
+            do {
+                return try String(contentsOf: url, encoding: .utf8)
+            } catch {
+                // Try alternative encodings
+                if let content = try? String(contentsOf: url, encoding: .macOSRoman) {
+                    return content
+                }
+                if let content = try? String(contentsOf: url, encoding: .isoLatin1) {
+                    return content
+                }
+                throw SwiftPromptError.fileReadError(path: url.path, underlying: error)
+            }
+        } catch let error as SwiftPromptError {
+            throw error
+        } catch {
+            throw SwiftPromptError.fileReadError(path: url.path, underlying: error)
         }
     }
     
