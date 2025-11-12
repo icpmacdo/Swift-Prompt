@@ -404,17 +404,22 @@ class ContentViewModel: ObservableObject {
     func readFileContent(at url: URL) throws -> String {
         do {
             // Security check for path traversal
-            if let folderPath = folderURL?.path {
-                let normalizedPath = url.path
-                let normalizedFolderPath = folderPath
-                
-                // Check for path traversal attempts
-                if normalizedPath.contains("../") || normalizedPath.contains("..\\") {
-                    throw SwiftPromptError.pathTraversalAttempt(path: url.path)
-                }
-                
-                // Ensure file is within selected folder
-                if !normalizedPath.hasPrefix(normalizedFolderPath) {
+            if let folderURL = folderURL {
+                // Resolve both paths to their canonical forms (follows symlinks, resolves .., etc.)
+                let resolvedFileURL = url.standardizedFileURL.resolvingSymlinksInPath()
+                let resolvedFolderURL = folderURL.standardizedFileURL.resolvingSymlinksInPath()
+
+                // Get the actual file system paths
+                let filePath = resolvedFileURL.path
+                let folderPath = resolvedFolderURL.path
+
+                // Ensure the resolved file path starts with the resolved folder path
+                // Add trailing slash to folder path to prevent false matches
+                // (e.g., "/Users/test" shouldn't match "/Users/test2")
+                let normalizedFolderPath = folderPath.hasSuffix("/") ? folderPath : folderPath + "/"
+
+                if !filePath.hasPrefix(normalizedFolderPath) && filePath != folderPath {
+                    SwiftLog("LOG: [SECURITY] Path traversal attempt blocked: \(url.path) -> \(filePath) is outside \(folderPath)")
                     throw SwiftPromptError.pathTraversalAttempt(path: url.path)
                 }
             }
