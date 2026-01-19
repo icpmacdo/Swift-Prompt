@@ -383,14 +383,24 @@ extension MessageClientView {
             ])
         }
 
-        var targetFolder = folder
+        // SECURITY: Reject paths containing path traversal attempts
         let components = sanitizedFilename.components(separatedBy: "/")
+        for component in components {
+            if component == ".." {
+                SwiftLog("LOG: [SECURITY] Path traversal attempt blocked in writeFileUpdate: \(sanitizedFilename)")
+                throw NSError(domain: "SwiftPromptErrorDomain", code: 102, userInfo: [
+                    NSLocalizedDescriptionKey: "Invalid path: path traversal not allowed."
+                ])
+            }
+        }
+
+        var targetFolder = folder
         let actualFilename = components.last ?? sanitizedFilename
 
         if components.count > 1 {
             let subdirComponents = components.dropLast()
             for component in subdirComponents {
-                if component == ".." || component == "." { continue }
+                if component == "." || component.isEmpty { continue }
                 targetFolder = targetFolder.appendingPathComponent(component)
             }
             try FileManager.default.createDirectory(at: targetFolder, withIntermediateDirectories: true)
@@ -398,6 +408,18 @@ extension MessageClientView {
         }
 
         let destination = targetFolder.appendingPathComponent(sanitizedFilename)
+
+        // SECURITY: Final validation - ensure resolved path is within the allowed folder
+        let resolvedDestination = destination.standardizedFileURL.resolvingSymlinksInPath()
+        let resolvedFolder = folder.standardizedFileURL.resolvingSymlinksInPath()
+        let normalizedFolderPath = resolvedFolder.path.hasSuffix("/") ? resolvedFolder.path : resolvedFolder.path + "/"
+
+        if !resolvedDestination.path.hasPrefix(normalizedFolderPath) {
+            SwiftLog("LOG: [SECURITY] Path traversal attempt blocked: \(destination.path) resolves outside \(folder.path)")
+            throw NSError(domain: "SwiftPromptErrorDomain", code: 102, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid path: destination is outside the selected folder."
+            ])
+        }
         let fm = FileManager.default
 
         if fm.fileExists(atPath: destination.path) {

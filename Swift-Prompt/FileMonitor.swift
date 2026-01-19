@@ -7,11 +7,19 @@ class FileMonitor {
     private let fileDescriptor: CInt
     private var fileSnapshot: [String: Date] = [:]
     private let snapshotQueue = DispatchQueue(label: "com.swiftprompt.filemonitor.snapshot")
+    private var isMonitoring = false
+    private var fileDescriptorClosed = false
 
     init(url: URL, callback: @escaping ([URL]) -> Void) {
         self.url = url
         self.callback = callback
         self.fileDescriptor = open(url.path, O_EVTONLY)
+
+        // SECURITY: Validate that the file descriptor was opened successfully
+        guard self.fileDescriptor >= 0 else {
+            SwiftLog("LOG: [ERROR] Failed to open directory for monitoring: \(url.path) (errno: \(errno))")
+            return
+        }
 
         // Take initial snapshot
         self.fileSnapshot = Self.createSnapshot(at: url)
@@ -29,18 +37,42 @@ class FileMonitor {
             }
             self.callback(changed)
         }
-        self.source?.setCancelHandler {
-            close(self.fileDescriptor)
+        self.source?.setCancelHandler { [weak self] in
+            guard let self = self else { return }
+            if !self.fileDescriptorClosed {
+                close(self.fileDescriptor)
+                self.fileDescriptorClosed = true
+            }
+        }
+    }
+
+    // SECURITY: Ensure file descriptor is closed when object is deallocated
+    deinit {
+        stopMonitoring()
+        // If source was never created or cancel handler didn't run, close FD manually
+        if !fileDescriptorClosed && fileDescriptor >= 0 {
+            close(fileDescriptor)
+            fileDescriptorClosed = true
         }
     }
 
     func startMonitoring() {
+        // Only resume if source exists and not already monitoring
+        guard source != nil, !isMonitoring else {
+            if source == nil {
+                SwiftLog("LOG: [WARN] Cannot start monitoring - source is nil (file descriptor open failed)")
+            }
+            return
+        }
         source?.resume()
+        isMonitoring = true
     }
 
     func stopMonitoring() {
+        guard isMonitoring else { return }
         source?.cancel()
         source = nil
+        isMonitoring = false
     }
 
     private func getChangedFiles() -> [URL] {

@@ -23,21 +23,40 @@ class ContentViewModel: ObservableObject {
     @Published var currentError: SwiftPromptError?
     @Published var showingError = false
     @Published var selectedExportFormat: ExportFormat = .xml
-    
+
     // For controlling which file types to load
     @Published var availableFileTypes: [String] = []
     @Published var selectedFileTypes: Set<String> = []  // persisted between sessions
-    
+
     @Published private(set) var filesCopied = 0
     @Published private(set) var totalFiles = 0
     @Published private(set) var filesProcessed = 0
-    
+
     // For showing the folder tree
     @Published var folderTree: FolderNode? = nil
-    
+
     private var fileMonitor: FileMonitor?
     private var cancellables = Set<AnyCancellable>()
+
+    // SECURITY: Track security-scoped resource access to ensure proper cleanup
+    private var securityScopedURL: URL?
     
+    // MARK: - Deinitialization
+    deinit {
+        // SECURITY: Ensure we stop accessing the security-scoped resource
+        stopSecurityScopedAccess()
+        fileMonitor?.stopMonitoring()
+    }
+
+    /// Stops accessing the current security-scoped resource if any
+    private func stopSecurityScopedAccess() {
+        if let url = securityScopedURL {
+            url.stopAccessingSecurityScopedResource()
+            SwiftLog("LOG: Stopped accessing security-scoped resource: \(url.path)")
+            securityScopedURL = nil
+        }
+    }
+
     // MARK: - Initialization
     init() {
         // Load previously saved selected file types from UserDefaults.
@@ -87,13 +106,17 @@ class ContentViewModel: ObservableObject {
         dialog.allowsMultipleSelection = false
         dialog.showsHiddenFiles = false
         dialog.prompt = "Select Folder for Reading and Writing"
-        
+
         if dialog.runModal() == .OK, let url = dialog.url {
+            // SECURITY: Stop accessing the previous security-scoped resource before starting a new one
+            stopSecurityScopedAccess()
+
             let startedAccessing = url.startAccessingSecurityScopedResource()
             if startedAccessing {
+                securityScopedURL = url  // Track the URL for cleanup
                 SwiftLog("LOG: Started accessing security-scoped resource at \(url.path)")
             }
-            
+
             if !FileManager.default.isWritableFile(atPath: url.path) {
                 SwiftLog("LOG: [WARN] Selected folder is not writable: \(url.path)")
                 DispatchQueue.main.async {
@@ -101,7 +124,7 @@ class ContentViewModel: ObservableObject {
                     self.showErrorAlert = true
                 }
             }
-            
+
             // Create a security-scoped bookmark.
             do {
                 let bookmarkData = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
@@ -110,7 +133,7 @@ class ContentViewModel: ObservableObject {
             } catch {
                 SwiftLog("LOG: [ERROR] Failed to create bookmark: \(error)")
             }
-            
+
             self.folderURL = url
         } else {
             SwiftLog("LOG: user canceled folder selection.")
@@ -121,17 +144,21 @@ class ContentViewModel: ObservableObject {
         guard let bookmarkData = UserDefaults.standard.data(forKey: "LastAccessedFolderBookmark") else {
             return
         }
-        
+
         do {
             var isStale = false
             let resolvedURL = try URL(resolvingBookmarkData: bookmarkData, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale)
-            
+
             if isStale {
                 SwiftLog("LOG: Bookmark is stale, will need to select folder again")
                 return
             }
-            
+
+            // SECURITY: Stop accessing the previous security-scoped resource before starting a new one
+            stopSecurityScopedAccess()
+
             if resolvedURL.startAccessingSecurityScopedResource() {
+                securityScopedURL = resolvedURL  // Track the URL for cleanup
                 SwiftLog("LOG: Restored access to previous folder: \(resolvedURL.path)")
                 self.folderURL = resolvedURL
             }
@@ -372,10 +399,7 @@ class ContentViewModel: ObservableObject {
         showingError = true
         
         // Log error
-        SwiftLog(
-            "LOG: [ERROR] \(error.localizedDescription)",
-            context: "ContentViewModel"
-        )
+        SwiftLog("LOG: [ERROR] [ContentViewModel] \(error.localizedDescription)")
     }
     
     // MARK: - Clear All Data

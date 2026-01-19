@@ -72,7 +72,25 @@ extension DiffPreviewView {
             SwiftLog("LOG: no folderURL; returning empty.")
             return ""
         }
+
+        // SECURITY: Reject paths containing path traversal attempts
+        if fileName.contains("..") {
+            SwiftLog("LOG: [SECURITY] Path traversal attempt blocked in readOldFileContents: \(fileName)")
+            return ""
+        }
+
         let fileURL = folderURL.appendingPathComponent(fileName)
+
+        // SECURITY: Validate resolved path is within the allowed folder
+        let resolvedFileURL = fileURL.standardizedFileURL.resolvingSymlinksInPath()
+        let resolvedFolderURL = folderURL.standardizedFileURL.resolvingSymlinksInPath()
+        let normalizedFolderPath = resolvedFolderURL.path.hasSuffix("/") ? resolvedFolderURL.path : resolvedFolderURL.path + "/"
+
+        if !resolvedFileURL.path.hasPrefix(normalizedFolderPath) && resolvedFileURL.path != resolvedFolderURL.path {
+            SwiftLog("LOG: [SECURITY] Path traversal blocked in diff preview: \(fileName) resolves outside folder")
+            return ""
+        }
+
         do {
             let contents = try String(contentsOf: fileURL)
             return contents
